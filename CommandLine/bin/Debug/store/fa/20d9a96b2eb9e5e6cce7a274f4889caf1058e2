@@ -1,0 +1,296 @@
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Security.Cryptography;
+using System.Threading;
+using System.Data;
+using System.Data.Common;
+using System.Text;
+using Mono;
+//using FirebirdSql.Data.FirebirdClient;
+//using Mono.Data.Sqlite;
+//using MongoDB.Driver;
+//using MongoDB.Bson;
+
+namespace Kraken.CommandLine
+{
+	class MainClass
+	{
+		public static void Main(string[] args)
+        {
+            LocalStore store = new LocalStore();
+            // 1 - hash a file. -> the first argument will be a file name. the hash will be output on the console.
+            if (args.Length == 0 || args.Length == 1)
+            {
+                Console.WriteLine("Usage: kraken in <file> || kraken out <checksum>");
+            } else if (args[0] == "in") 
+            {
+                string fileName = args[1];
+                // we'll test to see if the file exists.
+                try {
+                    string checksum = FileSha1Checksum(fileName);
+                    store.StoreFile(fileName, checksum);
+                    Console.WriteLine("Checksum {0} => {1}", fileName, checksum);
+                } catch (FileNotFoundException) {
+                    Console.WriteLine("File {0} does not exist.", fileName);
+                }
+            } else { // we are now trying to retrieve the file. let's print it out to STDIN first.
+                string checksum = args[1];
+                using (Stream s = store.GetFile(checksum)) {
+                    Console.WriteLine("File Stored: {0}\n", checksum);
+                    using (StreamReader reader = new StreamReader(s)) {
+                        string allText = reader.ReadToEnd();
+                        Console.WriteLine(allText);
+                    }
+                }
+            }
+		}
+
+        public static FileStream ChecksumToFileStream(string checksum)
+        {
+            string filePath = ChecksumToFilePath(checksum);
+            return File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        }
+
+        public static string ChecksumToFilePath(string checksum)
+        {
+            string folder = checksum.Substring(0, 2);
+            string fileName = checksum.Substring(2);
+            return Path.Combine(Directory.GetCurrentDirectory(), "store", folder, fileName);
+        }
+
+        public static void StoreFile(string filePath, string checksum)
+        {
+            // given a path we'll store the file in the following manner.
+            // 1 - ensure the basic store root folder exist. (let's call it store).
+            // we'll create the path in GIT way - take the first two character as the path, and the rest as the filename.
+            string folder = checksum.Substring(0, 2);
+            string fileName = checksum.Substring(2);
+            string storePath = Path.Combine(Directory.GetCurrentDirectory(), "store", folder);
+            string workingPath = Path.Combine(Directory.GetCurrentDirectory(), "cache");
+            Directory.CreateDirectory(storePath);
+            Directory.CreateDirectory(workingPath);
+            // let's get a temp name.
+            string tempPath = Path.Combine(workingPath, (new Guid()).ToString());
+
+            // there isn't File.rename and File.Move doesn't provide overwrite.
+            // luckily as long as the file has the same checksum we can count on it being the same file
+            // so we'll just handle the error and let it be.
+            try
+            {
+                File.Copy(filePath, tempPath); // OK - so it's copied.
+                File.Move(tempPath, Path.Combine(storePath, fileName));
+            } catch (Exception)
+            {
+                File.Delete(tempPath);
+            }
+        }
+
+        public static string FileSha1Checksum(string filePath)
+        {
+            using (FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+                return ByteToString(Sha1Checksum(fs));
+            }
+        }
+
+        // this goes to Util.
+        public static string ByteToString(byte[] bytes)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (byte b in bytes)
+            {
+                builder.AppendFormat("{0:x2}", b);
+            }
+            return builder.ToString();
+        }
+
+        public static byte[] Sha1Checksum(Stream s)
+        {
+            byte[] result;
+            using (SHA1Managed hasher = new SHA1Managed())
+            {
+                result = hasher.ComputeHash(s);
+            }
+            return result;
+        }
+
+
+        public static byte[] Sha256Checksum(Stream s) {
+            byte[] result;
+            using (SHA256Managed hasher = new SHA256Managed())
+            {
+                result = hasher.ComputeHash(s);
+            }
+            return result;
+        }
+
+        /*
+        public static void UsingMongoDB ()
+        {
+            MongoClient client = new MongoClient ();
+            MongoServer server = client.GetServer ();
+            MongoDatabase database = server.GetDatabase ("test");
+            MongoCollection posts = database.GetCollection ("post");
+            Console.WriteLine("Using MongoDB START");
+            foreach (BsonDocument doc in posts.FindAllAs(typeof(BsonDocument))) {
+                Console.WriteLine("Mongo: {0}", doc);
+            }
+            Console.WriteLine("Using MongoDB END");
+        }
+        
+        // http://www.codeguru.com/csharp/.net/net_data/sortinganditerating/article.php/c10487/Create-ProviderIndependent-Data-Access-Code-with-ADONET-20.htm
+        public static void UsingDbProviders ()
+        {
+            using (DataTable table = DbProviderFactories.GetFactoryClasses()) {
+                foreach (DataRow row in table.Rows) {
+                    Console.WriteLine("Name: {0}, {1}, {2}, {3}", row[0], row[1], row[2], row[3]);
+                }
+            }
+        }
+        
+        public static void UsingSqlite ()
+        {
+            string connString = "URI=file:testdb.db,version=3";
+            //DbProviderFactory factory = DbProviderFactories.GetFactory("Mono.Data.Sqlite");
+            //DbConnectionStringBuilder builder = factory.CreateConnectionStringBuilder();
+            //builder.Add("Data Source", ":memory:");
+            try {
+                //using (IDbConnection conn = factory.CreateConnection()) {
+                using (IDbConnection conn = new SqliteConnection(connString)) {
+                    conn.Open();
+                    using (IDbCommand cmd = conn.CreateCommand()) {
+                        cmd.CommandText = "create table test1(col1 int primary key not null, col2 int)";
+                        cmd.ExecuteNonQuery();
+                    }
+                    using (IDbCommand cmd = conn.CreateCommand()) {
+                        cmd.CommandText = "insert into test1 select 1, 2 union select 2, 3 union select 3, 4";
+                        cmd.ExecuteNonQuery();
+                    }
+                    using (IDbCommand cmd = conn.CreateCommand()) {
+                        cmd.CommandText = "select * from test1";
+                        using (IDataReader reader = cmd.ExecuteReader()) {
+                            while (reader.Read()) {
+                                Console.WriteLine("SQLITE: {0}, {1}", reader[0], reader[1]);
+                            }
+                        }
+                    }
+                    using (IDbCommand cmd = conn.CreateCommand()) {
+                        cmd.CommandText = "drop table test1";
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Using Sqlite Failed: {0}", e);
+            }
+        }
+        
+        public static void UsingFirebird ()
+        {
+            string connString = "ServerType=1;User=sysdba;Password='masterkey';Database='localhost:/Users/yc/temp/firebird/firstdb.fdb';DataSource=localhost";
+            try {
+                using (IDbConnection conn = new FbConnection(connString)) {
+                    conn.Open ();
+                    using (IDbCommand cmd = conn.CreateCommand()) {
+                        cmd.CommandText = "select * from sales_catalog";
+                        using (IDataReader reader = cmd.ExecuteReader()) {
+                            while (reader.Read()) {
+                                Console.WriteLine ("Read from Firebird {0}, {1}, {2}", reader [0], reader [1], reader [2]);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Using Firebird Failed: {0}", e);
+            }
+        }
+        //*/
+
+        public static void EncryptionThread ()
+        {
+            string payload = "please encrypt me please";
+            byte[] key = GetRandomBytes(16);
+            byte[] iv = GetRandomBytes(16);
+            byte[] encrypted = Encrypt(payload, key, iv);
+            string decrypted = Decrypt(encrypted, key, iv);
+            Console.WriteLine ("Hello World! {0}, {1}, {2}", encrypted, decrypted, decrypted == payload);
+        }
+        
+        public static byte[] GetRandomBytes (int size)
+        {
+            byte[] bytes = new byte[size];
+            var rng2 = new RNGCryptoServiceProvider();
+            rng2.GetBytes(bytes); 
+            return bytes;
+        }
+        
+        public static void CompressThread ()
+        {
+            string payload = "This is the new payload - compress me please";
+            byte[] compressed = Compress(payload);
+            string decompressed = Decompress(compressed);
+            Console.WriteLine("Gzip Compression {0}, {1}, {2}", compressed, decompressed, decompressed == payload);
+        }
+        
+        public static byte[] Compress (string text)
+        {
+            byte[] result;
+            using (MemoryStream s = new MemoryStream()) {
+                using (GZipStream gs = new GZipStream(s, CompressionMode.Compress)) {
+                    using (StreamWriter writer = new StreamWriter(gs)) {
+                        writer.Write(text);
+                    }
+                }
+                result = s.ToArray();
+            }
+            return result;
+        }
+        
+        public static string Decompress (byte[] compressed)
+        {
+            string result;
+            using (MemoryStream s = new MemoryStream(compressed)) {
+                using (GZipStream gs = new GZipStream(s, CompressionMode.Decompress)) {
+                    using (StreamReader reader = new StreamReader(gs)) {
+                        result = reader.ReadToEnd();
+                    }
+                }
+            }
+            return result;
+        }
+        
+        public static byte[] Encrypt(string text, byte[] key, byte[] iv) {
+            byte[] result;
+            using (Aes myAes = Aes.Create()) {
+                myAes.Key = key;
+            myAes.IV = iv;
+            ICryptoTransform encryptor = myAes.CreateEncryptor(key, iv);
+            using (MemoryStream s = new MemoryStream()) {
+                using (CryptoStream cs = new CryptoStream(s, encryptor, CryptoStreamMode.Write)) {
+                    using (StreamWriter writer = new StreamWriter(cs)) {
+                        writer.Write(text);
+                    }
+                }
+                result = s.ToArray();
+            }
+        }
+        return result;
+    }
+
+public static string Decrypt(byte[] encrypted, byte[] key, byte[] iv) {
+    string result;
+    using (Aes aes = Aes.Create()) {
+        aes.Key = key;
+        aes.IV = iv;
+        ICryptoTransform decryptor = aes.CreateDecryptor(key, iv);
+        using (MemoryStream s = new MemoryStream(encrypted)) {
+            using (CryptoStream cs = new CryptoStream(s, decryptor, CryptoStreamMode.Read)) {
+                using (StreamReader reader = new StreamReader(cs)) {
+                    result = reader.ReadToEnd();
+                }
+            }
+        }
+    }
+    return result;
+}
+}
+}
