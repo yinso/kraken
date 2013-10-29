@@ -12,23 +12,34 @@ namespace Kraken.CommandLine
 
         // the goal is to compress a file into another file.
         // basics would be string to string.
+
+        public static void Compress(string sourcePath, string destPath)
+        {
+            StreamUtil.FileToFile(sourcePath, destPath, Compress);
+        }
+
         public static void Compress(Stream source, Stream dest)
         {
             using (GZipStream gs = new GZipStream(dest, CompressionMode.Compress))
             {
-                source.CopyTo(dest);
+                source.CopyTo(gs);
+                source.Flush();
+                dest.Position = 0;
             }
         }
 
-        // from http://stackoverflow.com/questions/230128/best-way-to-copy-between-two-stream-instances
-        // http://stackoverflow.com/questions/1540658/net-asynchronous-stream-read-write
-        public static void CopyStream(Stream input, Stream output)
+        public static void Decompress(string sourcePath, string destPath)
         {
-            byte[] buffer = new byte[32768];
-            int read;
-            while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+            StreamUtil.FileToFile(sourcePath, destPath, Decompress);
+        }
+
+        public static void Decompress(Stream source, Stream dest)
+        {
+            using (GZipStream gs = new GZipStream(source, CompressionMode.Decompress))
             {
-                output.Write (buffer, 0, read);
+                gs.CopyTo(dest);
+                gs.Flush();
+                dest.Position = 0;
             }
         }
 

@@ -37,10 +37,11 @@ namespace Kraken.CommandLine
             } else { // we are now trying to retrieve the file. let's print it out to STDIN first.
                 string checksum = args[1];
                 using (Stream s = store.GetFile(checksum)) {
-                    Console.WriteLine("File Stored: {0}\n", checksum);
+                    Console.WriteLine("File Stored: {0} => {1}\n", checksum, s.Length);
                     PrintToConsole(s);
                 }
             }
+            store.Dispose();
 		}
 
         public static void PrintToConsole(Stream s)
@@ -75,42 +76,7 @@ namespace Kraken.CommandLine
             }
         }
         
-        public static void UsingSqlite ()
-        {
-            string connString = "URI=file:testdb.db,version=3";
-            //DbProviderFactory factory = DbProviderFactories.GetFactory("Mono.Data.Sqlite");
-            //DbConnectionStringBuilder builder = factory.CreateConnectionStringBuilder();
-            //builder.Add("Data Source", ":memory:");
-            try {
-                //using (IDbConnection conn = factory.CreateConnection()) {
-                using (IDbConnection conn = new SqliteConnection(connString)) {
-                    conn.Open();
-                    using (IDbCommand cmd = conn.CreateCommand()) {
-                        cmd.CommandText = "create table test1(col1 int primary key not null, col2 int)";
-                        cmd.ExecuteNonQuery();
-                    }
-                    using (IDbCommand cmd = conn.CreateCommand()) {
-                        cmd.CommandText = "insert into test1 select 1, 2 union select 2, 3 union select 3, 4";
-                        cmd.ExecuteNonQuery();
-                    }
-                    using (IDbCommand cmd = conn.CreateCommand()) {
-                        cmd.CommandText = "select * from test1";
-                        using (IDataReader reader = cmd.ExecuteReader()) {
-                            while (reader.Read()) {
-                                Console.WriteLine("SQLITE: {0}, {1}", reader[0], reader[1]);
-                            }
-                        }
-                    }
-                    using (IDbCommand cmd = conn.CreateCommand()) {
-                        cmd.CommandText = "drop table test1";
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-            } catch (Exception e) {
-                Console.WriteLine("Using Sqlite Failed: {0}", e);
-            }
-        }
-        
+
         public static void UsingFirebird ()
         {
             string connString = "ServerType=1;User=sysdba;Password='masterkey';Database='localhost:/Users/yc/temp/firebird/firstdb.fdb';DataSource=localhost";
@@ -203,21 +169,21 @@ namespace Kraken.CommandLine
         return result;
     }
 
-public static string Decrypt(byte[] encrypted, byte[] key, byte[] iv) {
-    string result;
-    using (Aes aes = Aes.Create()) {
-        aes.Key = key;
-        aes.IV = iv;
-        ICryptoTransform decryptor = aes.CreateDecryptor(key, iv);
-        using (MemoryStream s = new MemoryStream(encrypted)) {
-            using (CryptoStream cs = new CryptoStream(s, decryptor, CryptoStreamMode.Read)) {
-                using (StreamReader reader = new StreamReader(cs)) {
-                    result = reader.ReadToEnd();
+    public static string Decrypt(byte[] encrypted, byte[] key, byte[] iv) {
+        string result;
+        using (Aes aes = Aes.Create()) {
+            aes.Key = key;
+            aes.IV = iv;
+            ICryptoTransform decryptor = aes.CreateDecryptor(key, iv);
+            using (MemoryStream s = new MemoryStream(encrypted)) {
+                using (CryptoStream cs = new CryptoStream(s, decryptor, CryptoStreamMode.Read)) {
+                    using (StreamReader reader = new StreamReader(cs)) {
+                        result = reader.ReadToEnd();
+                    }
                 }
             }
         }
+        return result;
     }
-    return result;
-}
-}
+    }
 }

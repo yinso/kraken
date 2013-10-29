@@ -20,7 +20,7 @@
     <WarningLevel>4</WarningLevel>
     <Externalconsole>True</Externalconsole>
     <PlatformTarget>x86</PlatformTarget>
-    <Commandlineparameters>in ../../Main.cs</Commandlineparameters>
+    <Commandlineparameters>out c45966344381c86035908e4e47cdacbcd19eceaa in ../../Main.cs </Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>none</DebugType>
@@ -34,6 +34,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="Mono.Data.Sqlite" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
@@ -41,6 +42,8 @@
     <Compile Include="LocalStore.cs" />
     <Compile Include="ChecksumUtil.cs" />
     <Compile Include="CompressUtil.cs" />
+    <Compile Include="StreamUtil.cs" />
+    <Compile Include="MimeType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
