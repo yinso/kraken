@@ -20,7 +20,6 @@ namespace Kraken.CommandLine
         private string storePath;
         string databasePath;
         string connString;
-        IDbConnection conn;
 
         // For Atomic Move File without errors.
         // This is actually quite difficult to achieve on Windows, and File.Move 
@@ -51,13 +50,10 @@ namespace Kraken.CommandLine
             storePath = Path.Combine(rootPath, storeFolder);
             Directory.CreateDirectory(storePath);
             Directory.CreateDirectory(cachePath);
-            conn = InitDatabase();
-            conn.Open();
+            InitDatabase();
         }
 
         public void Dispose() {
-            conn.Close();
-            conn.Dispose();
         }
 
         public Stream GetFile(string checksum)
@@ -81,18 +77,22 @@ namespace Kraken.CommandLine
         public bool IsFileCompressed(string checksum)
         {
             string cmdText = "select compressed from path_t where checksum = ?";
-            using (IDbCommand cmd = conn.CreateCommand())
+            using (IDbConnection conn = new SqliteConnection(connString))
             {
-                cmd.CommandText = cmdText;
-                cmd.CommandType = CommandType.Text;
+                conn.Open();
+                using (IDbCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = cmdText;
+                    cmd.CommandType = CommandType.Text;
                 
-                IDbDataParameter checksumParm = cmd.CreateParameter();
-                checksumParm.ParameterName = "checksum";
-                checksumParm.DbType = DbType.String;
-                checksumParm.Value = checksum;
+                    IDbDataParameter checksumParm = cmd.CreateParameter();
+                    checksumParm.ParameterName = "checksum";
+                    checksumParm.DbType = DbType.String;
+                    checksumParm.Value = checksum;
                 
-                cmd.Parameters.Add(checksumParm);
-                return (bool)cmd.ExecuteScalar();
+                    cmd.Parameters.Add(checksumParm);
+                    return (bool)cmd.ExecuteScalar();
+                }
             }
         }
 
@@ -163,26 +163,33 @@ namespace Kraken.CommandLine
         public void StoreFileMetaInfo(string checksum, bool compressed)
         {
             string cmdText = "insert into path_t (checksum, compressed) values (?, ?)";
-            using (IDbCommand cmd = conn.CreateCommand())
+            using (IDbConnection conn = new SqliteConnection(connString))
             {
-                cmd.CommandText = cmdText;
-                cmd.CommandType = CommandType.Text;
+                conn.Open();
+                using (IDbCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = cmdText;
+                    cmd.CommandType = CommandType.Text;
 
-                IDbDataParameter checksumParm = cmd.CreateParameter();
-                checksumParm.ParameterName = "checksum";
-                checksumParm.DbType = DbType.String;
-                checksumParm.Value = checksum;
+                    IDbDataParameter checksumParm = cmd.CreateParameter();
+                    checksumParm.ParameterName = "checksum";
+                    checksumParm.DbType = DbType.String;
+                    checksumParm.Value = checksum;
 
-                cmd.Parameters.Add(checksumParm);
+                    cmd.Parameters.Add(checksumParm);
 
-                IDbDataParameter compressedParm = cmd.CreateParameter();
-                compressedParm.ParameterName = "compressed";
-                compressedParm.DbType = DbType.Boolean;
-                compressedParm.Value = compressed;
-                cmd.Parameters.Add(compressedParm);
-                try {
-                    cmd.ExecuteNonQuery();
-                } catch (Exception) { } // if it exists already it's ok.
+                    IDbDataParameter compressedParm = cmd.CreateParameter();
+                    compressedParm.ParameterName = "compressed";
+                    compressedParm.DbType = DbType.Boolean;
+                    compressedParm.Value = compressed;
+                    cmd.Parameters.Add(compressedParm);
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    } catch (Exception)
+                    {
+                    } // if it exists already it's ok.
+                }
             }
         }
 
