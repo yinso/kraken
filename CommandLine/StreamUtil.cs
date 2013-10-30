@@ -29,6 +29,15 @@ namespace Kraken.CommandLine
                 output.Write (buffer, 0, read);
             }
         }
+
+        public static Stream StreamFromString(string s) {
+            MemoryStream stream = new MemoryStream();
+            StreamWriter writer = new StreamWriter(stream);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
     }
 }
 

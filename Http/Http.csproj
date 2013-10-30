@@ -2,16 +2,16 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.0</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{974D0DC4-BE0A-4913-9EEA-E6EC80465378}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Kraken.CommandLine</RootNamespace>
-    <AssemblyName>kraken</AssemblyName>
+    <ProjectGuid>{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Http</RootNamespace>
+    <AssemblyName>Http</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>False</Optimize>
@@ -19,33 +19,34 @@
     <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Externalconsole>True</Externalconsole>
-    <PlatformTarget>x86</PlatformTarget>
-    <Commandlineparameters>out c45966344381c86035908e4e47cdacbcd19eceaa in ../../Main.cs </Commandlineparameters>
+    <ConsolePause>False</ConsolePause>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
     <Optimize>True</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Externalconsole>True</Externalconsole>
-    <PlatformTarget>x86</PlatformTarget>
+    <ConsolePause>False</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="Mono.Data.Sqlite" />
+    <Reference Include="System.Json" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Formatting" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="LocalStore.cs" />
-    <Compile Include="ChecksumUtil.cs" />
-    <Compile Include="CompressUtil.cs" />
-    <Compile Include="StreamUtil.cs" />
-    <Compile Include="MimeType.cs" />
-    <Compile Include="EncryptionUtil.cs" />
+    <Compile Include="Request.cs" />
+    <Compile Include="Reader.cs" />
+    <Compile Include="Buffer.cs" />
+    <Compile Include="Response.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="Headers.cs" />
+    <Compile Include="BaseObject.cs" />
+    <Compile Include="ChunkedStream.cs" />
+    <Compile Include="Body.cs" />
+    <Compile Include="ContentHeader.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
