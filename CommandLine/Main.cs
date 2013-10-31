@@ -15,6 +15,7 @@ using Mono;
 using System.Configuration;
 
 using Kraken.Util;
+using Kraken.Core;
 
 
 namespace Kraken.CommandLine
@@ -25,15 +26,9 @@ namespace Kraken.CommandLine
         public static void Main(string[] args)
         {
             NameValueCollection appSettings = ConfigurationManager.AppSettings;
-            EncryptionType encryptionType = EncryptionUtil.StringToEncryptionType(appSettings["cryptoType"]);
-            string encryptionKey = appSettings["cryptoKey"];
-            ChecksumType checksumType = ChecksumUtil.StringToChecksumType(appSettings["checksumType"]);
-            string storePath = Path.Combine(appSettings["rootPath"], appSettings["blobFolder"]);
-            int folderLevels = int.Parse(appSettings["folderLevels"]);
-            int folderNameLength = int.Parse(appSettings["folderNameLength"]);
-            BlobStore store = new BlobStore(storePath, checksumType, encryptionType, encryptionKey, folderLevels, folderNameLength);
+            BlobStore store = new BlobStore(appSettings);
             string filePath = "../../Main.cs";
-            string checksum = store.SaveFile(filePath);
+            string checksum = store.SaveBlob(filePath);
             using (Blob b = store.OpenBlob(checksum))
             {
                 Console.WriteLine("File: {0} => {1}", filePath, checksum);
