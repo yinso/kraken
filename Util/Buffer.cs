@@ -13,6 +13,10 @@ namespace Kraken.Util
         byte[] readBuffer = new byte[8192];
         public Buffer(Stream s)
         {
+            if (!s.CanRead)
+            {
+                throw new Exception("buffer_must_wrap_readable_stream");
+            }
             stream = s;
             buffer = new MemoryStream();
         }
@@ -31,7 +35,7 @@ namespace Kraken.Util
         {
             get
             {
-                return true;
+                return stream.CanRead;
             }
         }
 
@@ -72,7 +76,7 @@ namespace Kraken.Util
         }
 
         public override void Flush() {
-
+            throw new NotSupportedException();
         }
 
         public override int Read(byte[] bytes, int offset, int count)
@@ -127,12 +131,12 @@ namespace Kraken.Util
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override void SetLength(long value)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 }

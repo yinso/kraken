@@ -40,7 +40,7 @@ namespace Kraken.Core
             encryptionScheme = scheme;
             if (encryptionScheme != EncryptionType.NONE)
             {
-                encryptionKey = StringUtil.HexStringToByteArray(key);
+                encryptionKey = ByteUtil.HexStringToByteArray(key);
             }
             folderLevels = levels;
             folderNameLength = length;
@@ -129,10 +129,8 @@ namespace Kraken.Core
             Guid uuid = Guid.NewGuid();
             string tempFilePath = Path.Combine(workingPath, string.Format("{0}.{1}", checksum, uuid));
             using (FileStream tempFile = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
-                string preamble = BlobPreamble(length, iv, isCompressible);
-                // preamble needs to be written as bytes to the tempFile...
-                WriteString(tempFile, preamble);
-                WriteString(tempFile, "\r\n");
+                BlobEnvelope envelope = MakeEnvelope(length, iv, isCompressible);
+                envelope.WriteTo(tempFile);
                 using (FileStream input = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
                     using (Stream output = GetStream(tempFile, iv, isCompressible)) {
                         input.CopyTo(output);
@@ -165,26 +163,14 @@ namespace Kraken.Core
         }
 
 
-        public string BlobPreamble(long length, byte[] iv, bool isCompressible)
+        public BlobEnvelope MakeEnvelope(long length, byte[] iv, bool isCompressible)
         {
-            string[] values = new string[4];
-            values [0] = length.ToString();
-            if (isCompressible)
-            {
-                values [1] = CompressionType.GZIP.ToString().ToLower();
-            } else
-            {
-                values [1] = CompressionType.NONE.ToString().ToLower();
-            }
-            values [2] = encryptionScheme.ToString().ToLower();
-            if (encryptionScheme == EncryptionType.NONE)
-            {
-                values [3] = "none";
-            } else
-            {
-                values[3] = StringUtil.ByteArrayToHexString(iv);
-            }
-            return string.Join(" ", values) + "\r\n";
+            BlobEnvelope envelope = new BlobEnvelope();
+            envelope.OriginalLength = length;
+            envelope.CompressionScheme = isCompressible ? CompressionType.GZIP : CompressionType.NONE;
+            envelope.EncryptionScheme = encryptionScheme;
+            envelope.EncryptionIV = iv;
+            return envelope;
         }
 
         public bool FileCompressible(string filePath, long length) {

@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections.Specialized;
 
 using Kraken.Util;
 
@@ -52,14 +53,16 @@ namespace Kraken.Core
         string filePath;
         Stream inner;
         Reader reader;
-        Regex splitter = new Regex(@"\s+");
-        Regex integer = new Regex(@"^\d+$");
-        long fileSize;
-        CompressionType compression = CompressionType.NONE;
-        EncryptionType encryption = EncryptionType.NONE;
-        byte[] encryptionIV = new byte[0];
+        //Regex splitter = new Regex(@"\s+");
+        //Regex integer = new Regex(@"^\d+$");
+        //long fileSize;
+        //CompressionType compression = CompressionType.NONE;
+        //EncryptionType encryption = EncryptionType.NONE;
+        //byte[] encryptionIV = new byte[0];
         long headerOffset = 0;
         byte[] encryptionKey;
+
+        public BlobEnvelope Envelope { get; internal set; }
 
         // do I want this to represent the stream? I think so...
         public Blob(string path, byte[] key)
@@ -68,7 +71,7 @@ namespace Kraken.Core
             encryptionKey = key;
             inner = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             reader = new Reader(inner);
-            parseHeader();
+            parseEnvelope();
             // we should figure out what the offset is here...
             headerOffset = reader.Position;
             setupStream();
@@ -79,15 +82,19 @@ namespace Kraken.Core
             // this is impossible without knowing the target directory...!!!
         }
 
+        void parseEnvelope() {
+            Envelope = BlobEnvelope.Parse(reader);
+        }
+
         void setupStream()
         {
             // before we use the inner stream - we need to have it SET to the Reader's position.
             inner.Position = reader.Position;
-            if (encryption != EncryptionType.NONE)
+            if (Envelope.EncryptionScheme != EncryptionType.NONE)
             {
-                inner = EncryptionUtil.GetDecryptStream(inner, encryption, encryptionKey, encryptionIV);
+                inner = EncryptionUtil.GetDecryptStream(inner, Envelope.EncryptionScheme, encryptionKey, Envelope.EncryptionIV);
             }
-            if (compression == CompressionType.GZIP)
+            if (Envelope.CompressionScheme == CompressionType.GZIP)
             {
                 inner = CompressUtil.GetDecompressStream(inner);
             }
@@ -99,67 +106,6 @@ namespace Kraken.Core
             inner.Close();
         }
 
-        void parseHeader() {
-            parsePreamble();
-            parseKeyVals(); 
-        }
-
-        void parsePreamble()
-        {
-            string line = reader.ReadLine();
-            string[] values = splitter.Split(line);
-            if (!(values.Length == 4))
-            {
-                throw new Exception(string.Format("error_invalid_header_preamble: {0}", line));
-            }
-            parseFileSize(values[0]);
-            parseCompressionScheme(values[1]);
-            parseEncryptionScheme(values[2]); // things aren't by default encrypted... but we would want it soon.
-            parseEncryptionIV(values[3]);
-        }
-
-        void parseFileSize(string size) {
-            // first one is size.
-            Match isInteger = integer.Match(size);
-            if (isInteger.Success)
-            {
-                fileSize = int.Parse(size);
-            } else
-            {
-                throw new Exception(string.Format("error_invalid_header_preamble_size_not_integer: {0}", size));
-            }
-        }
-
-        void parseCompressionScheme(string scheme)
-        {
-            compression = CompressUtil.StringToCompressionType(scheme);
-        }
-
-        void parseEncryptionScheme(string scheme)
-        {
-            encryption = EncryptionUtil.StringToEncryptionType(scheme);
-        }
-
-        void parseEncryptionIV(string iv)
-        {
-            if (iv.Equals("none"))
-            {
-                encryptionIV = new byte[0];
-            } else
-            {
-                encryptionIV = StringUtil.HexStringToByteArray(iv);
-            }
-        }
-
-        void parseKeyVals()
-        {
-            string line;
-            while (!string.IsNullOrEmpty((line = reader.ReadLine())))
-            {
-                // TODO implement later.
-                // if it's NULL or EMPTY - we are done.
-            }
-        }
 
         // STREAM PART OF THE INTERFACE
         public override bool CanRead
@@ -190,7 +136,7 @@ namespace Kraken.Core
         {
             get
             {
-                return fileSize;
+                return Envelope.OriginalLength;
             }
         }
         
