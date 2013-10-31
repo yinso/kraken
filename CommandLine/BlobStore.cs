@@ -16,10 +16,10 @@ namespace Kraken.CommandLine
         ChecksumType checksumType;
         EncryptionType encryptionScheme;
         byte[] encryptionKey = new byte[0];
-        int folderNameLength = 2;
         int folderLevels = 3; // these are things that can be changd in the future.
+        int folderNameLength = 2;
 
-        public BlobStore(string root, ChecksumType type, EncryptionType scheme, string key)
+        public BlobStore(string root, ChecksumType type, EncryptionType scheme, string key, int levels, int length)
         {
             rootPath = root;
             Directory.CreateDirectory(rootPath);
@@ -31,6 +31,8 @@ namespace Kraken.CommandLine
             {
                 encryptionKey = StringUtil.HexStringToByteArray(key);
             }
+            folderLevels = levels;
+            folderNameLength = length;
         }
 
         public string FileChecksum(string filePath) {
