@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Http
+namespace Kraken.Util
 {
     public class Buffer : Stream
     {

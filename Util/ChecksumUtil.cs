@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Kraken.CommandLine
+namespace Kraken.Util
 {
 
     public enum ChecksumType {
@@ -13,6 +13,11 @@ namespace Kraken.CommandLine
     public class ChecksumUtil
     {
         private ChecksumUtil() {} 
+
+        public static ChecksumType StringToChecksumType(string type)
+        {
+            return (ChecksumType)Enum.Parse(typeof(ChecksumType), type, true);
+        }
 
         public static HashAlgorithm GetHashAlgorithm(ChecksumType type)
         {

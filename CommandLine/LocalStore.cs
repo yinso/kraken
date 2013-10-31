@@ -1,16 +1,59 @@
 using System;
 using System.IO;
+using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
 using System.Data;
 using System.Data.Common;
-using Mono.Data.Sqlite; // refactor this out later.
+using Mono.Data.Sqlite; // TODO refactor this out later.
+
+using Kraken.Util;
 
 namespace Kraken.CommandLine
 {
+    /// <summary>
+    /// Local store.
+    /// 
+    /// a completely file-based approach to load the data.
+    /// 
+    /// it's possible a file isn't stored locally, and that would require fetching from external resources.
+    /// 
+    /// also - the file can be both compressed and encrypted.
+    /// 
+    /// lastly - the file will have metadata associated with it.
+    /// 
+    /// Structure
+    /// 
+    /// /store -> holds all of the *stored* blobs (including versioned directories - the same way it is in git)
+    /// 
+    /// one thing to NOTE - /store *is* a complete CAS by itself. it holds whatever is currently stored in this 
+    /// particular local CAS, and it holds the same data (NOTE about encryption) across all volumes.
+    /// 
+    /// Blob -> the blog will hold the following information about itself.
+    /// size
+    /// compression scheme (by default it's gzip)
+    /// encryption scheme (by default it's aes256)
+    /// Probably the easiest is to prepend the data (but keep the hash the same as the original hash number) - these
+    /// are meant to be stripped later down the road.
+    /// 
+    /// So the prepending scheme can be something like this...
+    /// 
+    /// 1) line based. (terminate \r\n)
+    /// 2) split by space
+    /// 3) double quote for cases where we'll need to include space -> in such case the line terminator in string need to be escaped.
+    /// 4) if key/value needs to be included?
+    /// 
+    /// 
+    /// 
+    /// 
+    /// /root -> holds 
+    /// 
+    /// 
+    /// </summary>
     public class LocalStore : IDisposable
     {
         // these values will be shared once we allow for multiple files being added at once in server-mode.
+        // TODO - these should go into a config.
         private string rootPath = Directory.GetCurrentDirectory();
         private string cacheFolder = "cache";
         private string storeFolder = "store";
@@ -53,6 +96,36 @@ namespace Kraken.CommandLine
             InitDatabase();
         }
 
+        public LocalStore(NameValueCollection nvc)
+        {
+            if (nvc ["rootPath"] != null)
+            {
+                rootPath = nvc ["rootPath"];
+            }
+            if (nvc ["cachFolder"] != null)
+            {
+                cacheFolder = nvc ["cachFolder"];
+            }
+            if (nvc ["storeFolder"] != null)
+            {
+                storeFolder = nvc ["storeFolder"];
+            }
+            if (nvc ["dbFolder"] != null)
+            {
+                dbFolder = nvc ["dbFolder"];
+            }
+            if (nvc ["dbFile"] != null)
+            {
+                dbFile = nvc["dbFile"];
+            }
+            cachePath = Path.Combine(rootPath, cacheFolder);
+            storePath = Path.Combine(rootPath, storeFolder);
+            Directory.CreateDirectory(storePath);
+            Directory.CreateDirectory(cachePath);
+            InitDatabase();
+        }
+
+
         public void Dispose() {
         }
 
@@ -65,7 +138,7 @@ namespace Kraken.CommandLine
                 // return a uncompressed stream.
                 MemoryStream s = new MemoryStream(); // not efficient this way...
                 using (FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                    CompressUtil.Decompress(fs, s);
+                    CompressUtil.Decompress(fs, s, true);
                     return s;
                 }
             } else

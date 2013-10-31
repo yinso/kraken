@@ -2,17 +2,24 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 
-namespace Kraken.CommandLine
+namespace Kraken.Util
 {
+
+    public enum EncryptionType
+    {
+        NONE, AES128 , AES256
+    }
+
     public class EncryptionUtil
     {
-        public enum EncryptionType
-        {
-            AES128 , AES256
-        }
 
         private EncryptionUtil()
         {
+        }
+
+        public static EncryptionType StringToEncryptionType(string type)
+        {
+            return (EncryptionType)Enum.Parse(typeof(EncryptionType), type, true);
         }
 
         public static byte[] GetRandomBytes (int size)
@@ -30,11 +37,15 @@ namespace Kraken.CommandLine
                 SymmetricAlgorithm crypto = Aes.Create();
                 crypto.BlockSize = 128;
                 crypto.KeySize = 128;
+                //crypto.Mode = CipherMode.CFB;
+                //crypto.Padding = PaddingMode.None;
                 return crypto;
             } else if (type == EncryptionType.AES256) {
                 SymmetricAlgorithm crypto = Aes.Create();
-                crypto.BlockSize = 256;
+                crypto.BlockSize = 128;
                 crypto.KeySize = 256;
+                //crypto.Mode = CipherMode.CFB;
+                //crypto.Padding = PaddingMode.None;
                 return crypto;
             } else
             {
@@ -53,25 +64,34 @@ namespace Kraken.CommandLine
             }
         }
 
-        public static void Encrypt(Stream source, Stream dest, EncryptionType type, byte[] key, byte[] iv)
-        {
+        public static CryptoStream GetEncryptStream(Stream dest, EncryptionType type, byte[] key, byte[] iv) {
             using (SymmetricAlgorithm algo = GetSymmetricAlgorithm(type))
             {
                 ICryptoTransform transform = algo.CreateEncryptor(key, iv);
-                using (CryptoStream cs = new CryptoStream(dest, transform, CryptoStreamMode.Write)) {
-                    source.CopyTo(dest);
-                }
+                return new CryptoStream(dest, transform, CryptoStreamMode.Write);
+            }
+        }
+
+        public static void Encrypt(Stream source, Stream dest, EncryptionType type, byte[] key, byte[] iv)
+        {
+            using (CryptoStream cs = GetEncryptStream(dest, type, key, iv)) {
+                source.CopyTo(dest);
+            }
+        }
+
+        public static CryptoStream GetDecryptStream(Stream source, EncryptionType type, byte[] key, byte[] iv)
+        {
+            using (SymmetricAlgorithm algo = GetSymmetricAlgorithm(type))
+            {
+                ICryptoTransform transform = algo.CreateDecryptor(key, iv);
+                return new CryptoStream(source, transform, CryptoStreamMode.Read);
             }
         }
 
         public static void Decrypt(Stream source, Stream dest, EncryptionType type, byte[] key, byte[] iv)
         {
-            using (SymmetricAlgorithm algo = GetSymmetricAlgorithm(type))
-            {
-                ICryptoTransform transform = algo.CreateDecryptor(key, iv);
-                using (CryptoStream cs = new CryptoStream(dest, transform, CryptoStreamMode.Read)) {
-                    source.CopyTo(dest);
-                }
+            using (CryptoStream cs = GetDecryptStream(source, type, key, iv)) {
+                cs.CopyTo(dest);
             }
         }
     }

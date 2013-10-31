@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLine", "CommandLine\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http", "Http\Http.csproj", "{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraken.Util", "Util\Kraken.Util.csproj", "{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,6 +17,10 @@ Global
 		{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}.Debug|x86.Build.0 = Debug|Any CPU
 		{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}.Release|x86.ActiveCfg = Release|Any CPU
 		{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}.Release|x86.Build.0 = Release|Any CPU
+		{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}.Debug|x86.Build.0 = Debug|Any CPU
+		{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}.Release|x86.ActiveCfg = Release|Any CPU
+		{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}.Release|x86.Build.0 = Release|Any CPU
 		{974D0DC4-BE0A-4913-9EEA-E6EC80465378}.Debug|x86.ActiveCfg = Debug|x86
 		{974D0DC4-BE0A-4913-9EEA-E6EC80465378}.Debug|x86.Build.0 = Debug|x86
 		{974D0DC4-BE0A-4913-9EEA-E6EC80465378}.Release|x86.ActiveCfg = Release|x86

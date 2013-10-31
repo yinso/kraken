@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Http
+namespace Kraken.Util
 {
     public class Reader : IDisposable
     {
@@ -19,6 +19,14 @@ namespace Http
                 stream = new Buffer(s);
                 //stream = s;
             reader = new BinaryReader(stream);
+        }
+
+        public long Position
+        {
+            get
+            {
+                return stream.Position;
+            }
         }
 
         public void Release()

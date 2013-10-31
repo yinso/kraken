@@ -21,7 +21,7 @@
     <WarningLevel>4</WarningLevel>
     <Externalconsole>True</Externalconsole>
     <PlatformTarget>x86</PlatformTarget>
-    <Commandlineparameters>out c45966344381c86035908e4e47cdacbcd19eceaa in ../../Main.cs </Commandlineparameters>
+    <Commandlineparameters>out 1ba56ffafe05894edc0689ee3d0b1d047063b1a1 in ../../Main.cs  </Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>none</DebugType>
@@ -36,16 +36,28 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="Mono.Data.Sqlite" />
+    <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="LocalStore.cs" />
-    <Compile Include="ChecksumUtil.cs" />
-    <Compile Include="CompressUtil.cs" />
-    <Compile Include="StreamUtil.cs" />
     <Compile Include="MimeType.cs" />
-    <Compile Include="EncryptionUtil.cs" />
+    <Compile Include="Blob.cs" />
+    <Compile Include="BlobStore.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Http\Http.csproj">
+      <Project>{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}</Project>
+      <Name>Http</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Util\Kraken.Util.csproj">
+      <Project>{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}</Project>
+      <Name>Kraken.Util</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Specialized;
 using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -11,14 +12,40 @@ using Mono;
 //using Mono.Data.Sqlite;
 //using MongoDB.Driver;
 //using MongoDB.Bson;
+using System.Configuration;
+
+using Kraken.Util;
+
 
 namespace Kraken.CommandLine
 {
 	class MainClass
 	{
-		public static void Main(string[] args)
+
+        public static void Main(string[] args)
         {
-            LocalStore store = new LocalStore();
+            NameValueCollection appSettings = ConfigurationManager.AppSettings;
+            EncryptionType encryptionType = EncryptionUtil.StringToEncryptionType(appSettings["cryptoType"]);
+            string encryptionKey = appSettings["cryptoKey"];
+            ChecksumType checksumType = ChecksumUtil.StringToChecksumType(appSettings["checksumType"]);
+            string storePath = Path.Combine(appSettings["rootPath"], appSettings["storeFolder"]);
+            BlobStore store = new BlobStore(storePath, checksumType, encryptionType, encryptionKey);
+            string filePath = "../../Main.cs";
+            string checksum = store.SaveFile(filePath);
+            using (Blob b = store.OpenBlob(checksum))
+            {
+                Console.WriteLine("File: {0} => {1}", filePath, checksum);
+                PrintToConsole(b);
+            }
+        }
+        
+        public static void Main2(string[] args)
+        {
+            Console.WriteLine("ROOT => {0}", ConfigurationManager.AppSettings["rootPath"]);
+            Console.WriteLine("STORE => {0}", ConfigurationManager.AppSettings["storeFolder"]);
+            Console.WriteLine("DB => {0}", ConfigurationManager.AppSettings["dbFolder"]);
+            Console.WriteLine("CACHE => {0}", ConfigurationManager.AppSettings["cacheFolder"]);
+            LocalStore store = new LocalStore(ConfigurationManager.AppSettings);
             // 1 - hash a file. -> the first argument will be a file name. the hash will be output on the console.
             if (args.Length == 0 || args.Length == 1)
             {

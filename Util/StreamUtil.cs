@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace Kraken.CommandLine
+namespace Kraken.Util
 {
     public class StreamUtil
     {

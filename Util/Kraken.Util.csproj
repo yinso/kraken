@@ -5,11 +5,10 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.0</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{1C4838D3-4CE4-4AB4-9E83-068DE92A4778}</ProjectGuid>
+    <ProjectGuid>{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Http</RootNamespace>
-    <AssemblyName>Http</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>Kraken.Util</RootNamespace>
+    <AssemblyName>Util</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -31,26 +30,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Json" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Http.Formatting" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="Request.cs" />
-    <Compile Include="Response.cs" />
-    <Compile Include="Parser.cs" />
-    <Compile Include="Headers.cs" />
-    <Compile Include="BaseObject.cs" />
-    <Compile Include="ChunkedStream.cs" />
-    <Compile Include="Body.cs" />
-    <Compile Include="ContentHeader.cs" />
+    <Compile Include="Buffer.cs" />
+    <Compile Include="Reader.cs" />
+    <Compile Include="StringUtil.cs" />
+    <Compile Include="StreamUtil.cs" />
+    <Compile Include="EncryptionUtil.cs" />
+    <Compile Include="CompressUtil.cs" />
+    <Compile Include="ChecksumUtil.cs" />
+    <Compile Include="UpToStream.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <ProjectReference Include="..\Util\Kraken.Util.csproj">
-      <Project>{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}</Project>
-      <Name>Kraken.Util</Name>
-    </ProjectReference>
-  </ItemGroup>
 </Project>
