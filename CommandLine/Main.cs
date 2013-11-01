@@ -17,13 +17,27 @@ using System.Configuration;
 using Kraken.Util;
 using Kraken.Core;
 
-
 namespace Kraken.CommandLine
 {
 	class MainClass
 	{
 
         public static void Main(string[] args)
+        {
+            const string accessKeyID = "<replace_with_access_id>";
+            const string secretKeyID = "<replace_with_secret_id>";
+            S3Store s3Store = new S3Store(accessKeyID, secretKeyID);
+            const string sourcePath = "../../AssemblyInfo.cs";
+            const string s3Path = "bonzailab/testme/please/AssemblyInfo.cs";
+            const string newS3Path = "bonzailab/hello/world/you/test.cs";
+            const string destPath = "./AssemblyInfo.cs";
+            s3Store.SaveFile(sourcePath, s3Path);
+            s3Store.MovePath(s3Path, newS3Path);
+            s3Store.GetFile(newS3Path, destPath);
+            Console.WriteLine("Done");
+        }
+
+        public static void Main3(string[] args)
         {
             NameValueCollection appSettings = ConfigurationManager.AppSettings;
             PathStore pathStore = new PathStore(appSettings);
@@ -38,11 +52,11 @@ namespace Kraken.CommandLine
             string filePath = "../..";
             pathStore.SaveFolder(filePath, "test");
             // let's now delete test. this should fail.
-            pathStore.DeletePath("test/bin");
+            //pathStore.DeletePath("test/bin");
             Console.WriteLine("done!");
         }
 
-        public static void Main2(string[] args)
+        public static void Main4(string[] args)
         {
             NameValueCollection appSettings = ConfigurationManager.AppSettings;
             BlobStore store = new BlobStore(appSettings);

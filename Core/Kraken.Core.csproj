@@ -31,6 +31,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="AWSSDK">
+      <HintPath>..\packages\AWSSDK.1.5.37.0\lib\AWSSDK.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -42,6 +45,7 @@
     <Compile Include="PathStore.cs" />
     <Compile Include="PathEnvelope.cs" />
     <Compile Include="PathVersion.cs" />
+    <Compile Include="S3Store.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -49,5 +53,8 @@
       <Project>{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}</Project>
       <Name>Kraken.Util</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
