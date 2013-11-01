@@ -36,6 +36,11 @@ namespace Kraken.Util
             }
         }
 
+        public static string ComputeChecksumOfString(ChecksumType type, string data)
+        {
+            return ComputeChecksum(type, StreamUtil.StringToStream(data));
+        }
+
         public static string ComputeChecksum(ChecksumType type, string filePath)
         {
             return BytesToString(ComputeHash(type, filePath));

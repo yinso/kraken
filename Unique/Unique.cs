@@ -13,8 +13,13 @@ namespace Kraken.Unique
 
         public string Checksum { get ; internal set; }
 
-        public Dupe(string checksum) {
+        public bool IsDirectory { get; internal set; }
+
+        public bool IsFile { get { return !IsDirectory; } }
+
+        public Dupe(string checksum, bool isDir) {
             Checksum = checksum;
+            IsDirectory = isDir;
         }
 
         public void Add(string path) {
@@ -72,36 +77,49 @@ namespace Kraken.Unique
             }
         }
 
-        public void ProcessDiretory(string dirPath)
+        public string ProcessDiretory(string dirPath)
         {
+            /// how to calculate the hash of the whole directory?
+            /// it is comprised of the hash of the files + the subdirectories.
             Console.WriteLine("Process Directory: {0}", dirPath);
+            List<string> checksums = new List<string>();
             foreach (string file in Directory.GetFiles(dirPath))
             {
-                ProcessFile(file);
+                checksums.Add(ProcessFile(file));
             }
 
             foreach (string dir in Directory.GetDirectories(dirPath))
             {
-                ProcessDiretory(dir);
+                checksums.Add(ProcessDiretory(dir));
             }
+            string innerChecksums = string.Join("", checksums.ToArray());
+            string checksum = ChecksumUtil.ComputeChecksumOfString(ChecksumType.SHA1, innerChecksums);
+            AddDupe(dirPath, checksum, true);
+            return checksum;
         }
 
-        public void ProcessFile(string filePath)
+        public string ProcessFile(string filePath)
         {
             Console.WriteLine("Process File: {0}", filePath);
             if (pathToHash.ContainsKey(filePath)) // we've visited this file before... shouldn't get here.
-                return;
+                return pathToHash[filePath];
             string checksum = ChecksumUtil.ComputeChecksum(ChecksumType.SHA1, filePath);
-            pathToHash [filePath] = checksum;
+            AddDupe(filePath, checksum, false);
+            return checksum;
+        }
+
+        public void AddDupe(string path, string checksum, bool isDir)
+        {
+            pathToHash [path] = checksum;
             if (hashToDupe.ContainsKey(checksum))
             {
                 if (!hashToDupe [checksum].isDuplicate)
                     duplicates.Add(hashToDupe [checksum]);
-                hashToDupe [checksum].Add(filePath);
+                hashToDupe [checksum].Add(path);
             } else
             {
-                hashToDupe[checksum] = new Dupe(checksum);
-                hashToDupe[checksum].Add(filePath);
+                hashToDupe[checksum] = new Dupe(checksum, isDir);
+                hashToDupe[checksum].Add(path);
             }
         }
 
@@ -109,9 +127,9 @@ namespace Kraken.Unique
         {
             foreach (Dupe dupe in duplicates)
             {
-                Console.WriteLine("Duplicates: {0}", dupe.Checksum);
-                foreach(string filePath in dupe) {
-                    Console.WriteLine("   {0}", filePath);
+                Console.WriteLine("Duplicates: {0}", dupe.IsDirectory ? "Directories" : "Files");
+                foreach(string path in dupe) {
+                    Console.WriteLine("   {0}", path);
                 }
                 Console.WriteLine("");
             }

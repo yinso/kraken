@@ -30,7 +30,7 @@ namespace Kraken.Util
             }
         }
 
-        public static Stream StreamFromString(string s) {
+        public static Stream StringToStream(string s) {
             MemoryStream stream = new MemoryStream();
             StreamWriter writer = new StreamWriter(stream);
             writer.Write(s);

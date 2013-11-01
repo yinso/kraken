@@ -55,7 +55,7 @@ namespace Kraken.Util
 
         public static byte[] EncryptString(string text, EncryptionType type, byte[] key, byte[] iv)
         {
-            using (Stream source = StreamUtil.StreamFromString(text))
+            using (Stream source = StreamUtil.StringToStream(text))
             {
                 using (MemoryStream dest = new MemoryStream()) {
                     Encrypt(source, dest, type, key, iv);
