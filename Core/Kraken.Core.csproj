@@ -36,10 +36,12 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Blob.cs" />
     <Compile Include="BlobStore.cs" />
-    <Compile Include="BlobPath.cs" />
-    <Compile Include="BlobPathStore.cs" />
     <Compile Include="BlobEnvelope.cs" />
     <Compile Include="ResourceType.cs" />
+    <Compile Include="Path.cs" />
+    <Compile Include="PathStore.cs" />
+    <Compile Include="PathEnvelope.cs" />
+    <Compile Include="PathVersion.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -51,7 +51,13 @@ namespace Kraken.Util
             return reader.ReadBytes(count);
         }
 
-        public int PeekByte() {
+        public int PeekByte()
+        {
+            // this thing blocks...
+            if (stream.Position == stream.Length)
+            {
+                return -1;
+            }
             int b = stream.ReadByte();
             stream.Position -= 1;
             return b;

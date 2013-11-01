@@ -26,6 +26,20 @@ namespace Kraken.CommandLine
         public static void Main(string[] args)
         {
             NameValueCollection appSettings = ConfigurationManager.AppSettings;
+            PathStore pathStore = new PathStore(appSettings);
+            const string fromPath = "../../Main.cs";
+            const string toPath = "test/Main.cs";
+            Kraken.Core.Path path = pathStore.SavePath(fromPath, toPath);
+            Blob blob = pathStore.PathToBlob(path);
+            Console.WriteLine("File: {0} => {1} as {2}", fromPath, toPath, path.Envelope.Checksum);
+            PrintToConsole(blob);
+            Blob blob2 = pathStore.GetBlob(toPath);
+            PrintToConsole(blob2);
+        }
+
+        public static void Main2(string[] args)
+        {
+            NameValueCollection appSettings = ConfigurationManager.AppSettings;
             BlobStore store = new BlobStore(appSettings);
             string filePath = "../../Main.cs";
             string checksum = store.SaveBlob(filePath);
@@ -54,6 +68,10 @@ namespace Kraken.CommandLine
             Console.WriteLine("Read-Back Number Is: {0}", readIn);
             Console.WriteLine("Read-Back Reversed Endian Is: {0}", ReadBigEndianInt32(new MemoryStream(reversedVal)));
             Console.WriteLine("Read Big Endian Is: {0}", ReadBigEndianInt32(reversedVal));
+            DateTime now = DateTime.UtcNow;
+            DateTime now1 = DateTime.Parse(now.ToString("o")).ToUniversalTime(); 
+            Console.WriteLine("Now is {0}, and {1}... equal? {2}", now.ToString("o"), now1.ToString("o"), now.Equals(now1));
+
         }
 
         public static Int32 ReadBigEndianInt32(byte[] bytes)

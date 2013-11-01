@@ -25,7 +25,7 @@ namespace Kraken.Core
         }
 
         public BlobEnvelope() { 
-            Version = 1;
+            //Version = 1;
         } 
 
         public static BlobEnvelope Parse(Reader reader)
@@ -50,66 +50,12 @@ namespace Kraken.Core
             {
                 throw new Exception("incorrect_blob_envelope_format_not_start_with_blob");
             }
-            short version = parseShort(values[1]);
-            long origSize = parseLong(values[2]);
-            CompressionType cType = parseCompressionScheme(values[3]);
-            EncryptionType eType = parseEncryptionScheme(values[4]); // things aren't by default encrypted... but we would want it soon.
-            byte[] iv = parseEncryptionIV(values[5]);
+            short version = short.Parse(values[1]);
+            long origSize = long.Parse(values[2]);
+            CompressionType cType = CompressUtil.StringToCompressionType(values[3]);
+            EncryptionType eType = EncryptionUtil.StringToEncryptionType(values[4]); // things aren't by default encrypted... but we would want it soon.
+            byte[] iv = ByteUtil.HexStringToByteArray(values[5]);
             return new BlobEnvelope(version, origSize, cType, eType, iv);
-        }
-        
-        static short parseShort(string size) {
-            Regex integer = new Regex(@"^\d+$");
-            // first one is size.
-            Match isInteger = integer.Match(size);
-            if (isInteger.Success)
-            {
-                return short.Parse(size);
-            } else
-            {
-                throw new Exception(string.Format("error_invalid_header_preamble_size_not_integer: {0}", size));
-            }
-        }
-        static int parseInteger(string size) {
-            Regex integer = new Regex(@"^\d+$");
-            // first one is size.
-            Match isInteger = integer.Match(size);
-            if (isInteger.Success)
-            {
-                return int.Parse(size);
-            } else
-            {
-                throw new Exception(string.Format("error_invalid_header_preamble_size_not_integer: {0}", size));
-            }
-        }
-
-        static long parseLong(string size) {
-            Regex integer = new Regex(@"^\d+$");
-            // first one is size.
-            Match isInteger = integer.Match(size);
-            if (isInteger.Success)
-            {
-                return long.Parse(size);
-            } else
-            {
-                throw new Exception(string.Format("error_invalid_header_preamble_size_not_integer: {0}", size));
-            }
-        }
-
-        
-        static CompressionType parseCompressionScheme(string scheme)
-        {
-            return CompressUtil.StringToCompressionType(scheme);
-        }
-        
-        static EncryptionType parseEncryptionScheme(string scheme)
-        {
-            return EncryptionUtil.StringToEncryptionType(scheme);
-        }
-        
-        static byte[] parseEncryptionIV(string iv)
-        {
-            return ByteUtil.HexStringToByteArray(iv);
         }
 
         public byte[] Serialize()

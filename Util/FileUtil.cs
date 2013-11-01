@@ -7,7 +7,7 @@ namespace Kraken.Util
     public class FileUtil
     {
 #if !WIN32
-        [DllImport("libc")]
+        [DllImport("libc", SetLastError=true)]
         private extern static int rename(string oldPath, string newPath);
 #endif 
 
@@ -18,7 +18,8 @@ namespace Kraken.Util
             int result = rename(oldPath, newPath);
             Console.WriteLine("File.Rename via rename {0} => {1}", oldPath, newPath);
             if (result != 0) {
-                throw new Exception(string.Format("fileutil_rename_failed_errocode: {0}", result));
+                int errno = Marshal.GetLastWin32Error();
+                throw new Exception(string.Format("fileutil_rename_failed_errocode: {0}", errno));
             }
 #endif
         }
@@ -46,15 +47,30 @@ namespace Kraken.Util
             EnsureDirectory(Path.GetDirectoryName(filePath));
         }
 
+        public static string TempFilePath(string filePath, string newBasePath)
+        {
+            return TempFilePath(ChangePathDirectory(filePath, newBasePath));
+        }
+
         public static string TempFilePath(string filePath)
         {
             EnsurePathDirectory(filePath);
             return string.Format("{0}.{1}", filePath, Guid.NewGuid().ToString());
         }
 
+        public static FileStream OpenTempFile(string filePath, string newBasePath)
+        {
+            return OpenTempFile(ChangePathDirectory(filePath, newBasePath));
+        }
+
         public static FileStream OpenTempFile(string filePath) {
-            string tempPath = TempFilePath(filePath);
-            return File.Open(tempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
+            return OpenTempFile(filePath, false);
+        }
+
+        public static FileStream OpenTempFile(string filePath, bool isTempPath) {
+
+            string tempPath = isTempPath ? filePath : TempFilePath(filePath);
+            return File.Open(tempPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Kraken.Core
             EncryptionType encryptionType = EncryptionUtil.StringToEncryptionType(settings["cryptoType"]);
             string encryptionKey = settings["cryptoKey"];
             ChecksumType checksumType = ChecksumUtil.StringToChecksumType(settings["checksumType"]);
-            string storePath = Path.Combine(settings["rootPath"], settings["blobFolder"]);
+            string storePath = System.IO.Path.Combine(settings["rootPath"], settings["blobFolder"]);
             int folderLevels = int.Parse(settings["folderLevels"]);
             int folderNameLength = int.Parse(settings["folderNameLength"]);
             initialize(storePath, checksumType, encryptionType, encryptionKey, folderLevels, folderNameLength);
@@ -34,7 +34,7 @@ namespace Kraken.Core
         {
             rootPath = root;
             Directory.CreateDirectory(rootPath);
-            workingPath = Path.Combine(rootPath, workingFolder);
+            workingPath = System.IO.Path.Combine(rootPath, workingFolder);
             Directory.CreateDirectory(workingPath);
             checksumType = type;
             encryptionScheme = scheme;
@@ -102,7 +102,7 @@ namespace Kraken.Core
         {
             string folderPath = ChecksumToFolderPath(checksum);
             Directory.CreateDirectory(folderPath);
-            return Path.Combine(folderPath, ChecksumToFileName(checksum));
+            return System.IO.Path.Combine(folderPath, ChecksumToFileName(checksum));
         }
 
         // because this is *configurable* - we'll have to do more work for the calculation...
@@ -120,14 +120,14 @@ namespace Kraken.Core
             {
                 folders[i + 1] = checksum.Substring(i * folderNameLength, folderNameLength);
             }
-            return Path.Combine((string[])folders);
+            return System.IO.Path.Combine((string[])folders);
         }
 
         public string SaveToTempFile(string filePath, string checksum, long length, byte[] iv, bool isCompressible)
         {
             // secure a tempfile based on the checksum + the working path.
             Guid uuid = Guid.NewGuid();
-            string tempFilePath = Path.Combine(workingPath, string.Format("{0}.{1}", checksum, uuid));
+            string tempFilePath = System.IO.Path.Combine(workingPath, string.Format("{0}.{1}", checksum, uuid));
             using (FileStream tempFile = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
                 BlobEnvelope envelope = MakeEnvelope(length, iv, isCompressible);
                 envelope.WriteTo(tempFile);
