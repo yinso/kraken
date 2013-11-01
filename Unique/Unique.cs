@@ -123,7 +123,7 @@ namespace Kraken.Unique
             }
         }
 
-        public void ShowDupes()
+        public void ShowDupesConsole()
         {
             foreach (Dupe dupe in duplicates)
             {
@@ -135,6 +135,38 @@ namespace Kraken.Unique
             }
         }
 
+        public void ShowDupesHTML()
+        {
+            string tempFilePath = Guid.NewGuid().ToString() + ".html";
+            using (FileStream fs = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                using (StreamWriter writer = new StreamWriter(fs)) {
+                    writer.Write("<html><head><title>Dupes</title>" +
+                                "</head>" +
+                                "<body><ul>");
+                    // maybe I want to sort these?
+                    // in general, maybe reverse will do, since the structure is FILO.
+                    duplicates.Reverse();
+                    foreach (Dupe dupe in duplicates) {
+                        writer.Write("<li><p><b>");
+                        writer.Write(dupe.IsDirectory ? "Directories" : "Files");
+                        writer.Write("</b> (Checksum: ");
+                        writer.Write(dupe.Checksum);
+                        writer.Write(")</p><ul>");
+                        foreach (string path in dupe) {
+                            writer.Write("<li><a href=\"file://");
+                            writer.Write(path);
+                            writer.Write("\">");
+                            writer.Write(path);
+                            writer.Write("</a></li>");
+                        }
+                        writer.Write("</ul>");
+                    }
+                    writer.Write("</ul></body></html>");
+                }
+            }
+            System.Diagnostics.Process.Start(tempFilePath);
+        }
     }
 }
 

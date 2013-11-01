@@ -17,6 +17,11 @@ namespace Kraken.Unique
     /// </summary>
     class MainClass
     {
+        public static void Main3(string[] args)
+        {
+            System.Diagnostics.Process.Start(@"/Users/yc/Books/Business/Innovation Models.pdf");
+        }
+
         public static void Main(string[] args)
         {
             if (args.Length == 0)
@@ -24,16 +29,11 @@ namespace Kraken.Unique
                 Console.WriteLine("Usage: unique <directory>");
                 return;
             }
-            string sourceDir = args [0];
-            if (!Directory.Exists(sourceDir))
-            {
-                Console.WriteLine("Directory {0} does not exist.", sourceDir);
-                return;
-            }
             Unique unique = new Unique();
-            unique.Process(sourceDir);
+            foreach (string path in args) 
+                unique.Process(path);
             Console.WriteLine("\nResults\n");
-            unique.ShowDupes();
+            unique.ShowDupesHTML();
         }
     }
 }
