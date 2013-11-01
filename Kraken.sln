@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraken.Util", "Util\Kraken.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraken.Core", "Core\Kraken.Core.csproj", "{8191E64D-8C83-4905-8B04-8EBB9F1CD65D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraken.Unique", "Unique\Kraken.Unique.csproj", "{9D408356-F544-48BF-BA43-3F63D2649452}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -31,9 +33,13 @@ Global
 		{974D0DC4-BE0A-4913-9EEA-E6EC80465378}.Debug|x86.Build.0 = Debug|x86
 		{974D0DC4-BE0A-4913-9EEA-E6EC80465378}.Release|x86.ActiveCfg = Release|x86
 		{974D0DC4-BE0A-4913-9EEA-E6EC80465378}.Release|x86.Build.0 = Release|x86
+		{9D408356-F544-48BF-BA43-3F63D2649452}.Debug|x86.ActiveCfg = Debug|x86
+		{9D408356-F544-48BF-BA43-3F63D2649452}.Debug|x86.Build.0 = Debug|x86
+		{9D408356-F544-48BF-BA43-3F63D2649452}.Release|x86.ActiveCfg = Release|x86
+		{9D408356-F544-48BF-BA43-3F63D2649452}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = CommandLine\CommandLine.csproj
+		StartupItem = Unique\Kraken.Unique.csproj
 		Policies = $0
 		$0.TextStylePolicy = $1
 		$1.inheritsSet = VisualStudio
