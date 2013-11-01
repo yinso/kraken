@@ -35,6 +35,11 @@ namespace Kraken.CommandLine
             PrintToConsole(blob);
             Blob blob2 = pathStore.GetBlob(toPath);
             PrintToConsole(blob2);
+            string filePath = "../..";
+            pathStore.SaveFolder(filePath, "test");
+            // let's now delete test. this should fail.
+            pathStore.DeletePath("test/bin");
+            Console.WriteLine("done!");
         }
 
         public static void Main2(string[] args)
