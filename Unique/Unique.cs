@@ -7,9 +7,9 @@ using Kraken.Util;
 
 namespace Kraken.Unique
 {
-    public class Dupe : IEnumerable<string> {
+    public class Dupe : IEnumerable<Node> {
 
-        List<string> paths = new List<string>();
+        List<Node> paths = new List<Node>();
 
         public string Checksum { get ; internal set; }
 
@@ -22,12 +22,42 @@ namespace Kraken.Unique
             IsDirectory = isDir;
         }
 
-        public void Add(string path) {
-            paths.Add(path);
+        public void Add(Node node) {
+            paths.Add(node);
+            node.Dupe = this;
         }
 
-        public bool isDuplicate {
+        public bool IsSubDupe
+        {
+            get
+            {
+                if (!IsDupe)
+                    return false;
+                foreach (Node node in paths) {
+                    if (node.IsTop)
+                        return false;
+                    else if (!node.Parent.IsDupe)
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        public bool IsDupe {
             get { return paths.Count > 1; }
+        }
+
+        public List<Dupe> GetSubDupes() {
+            if (!IsDupe)
+                throw new Exception("not_a_duplicate");
+            if (!IsDirectory)
+                throw new Exception("subdupes_only_work_on_directories");
+            Node node = paths[0];
+            List<Dupe> children = new List<Dupe>();
+            foreach (Node child in node) {
+                children.Add(child.Dupe);
+            }
+            return children;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -35,10 +65,97 @@ namespace Kraken.Unique
             return this.GetEnumerator();
         }
 
-        public IEnumerator<string> GetEnumerator() {
+        public IEnumerator<Node> GetEnumerator() {
             return paths.GetEnumerator();
         }
 
+        public override string ToString()
+        {
+            if (IsDupe)
+            {
+                string[] dupes = new string[paths.Count];
+                for (int i = 0; i < paths.Count; ++i) { 
+                    dupes[i] = paths[i].FilePath;
+                }
+                return string.Format("<Dupe:{0}>", string.Join(",", dupes));
+            } else {
+                return "<Dupe:none>";
+            }
+        }
+
+    }
+
+    public class Node : IEnumerable<Node> {
+        List<Node> children = new List<Node>();
+
+        public string FilePath { get; internal set; }
+
+        public string FileName
+        {
+            get
+            {
+                return Path.GetFileName(FilePath);
+            }
+        }
+
+        public string Checksum { get; internal set; }
+
+        public bool IsDirectory { get; internal set; }
+
+        List<string> checksums = new List<string>();
+
+        public bool IsDupe { 
+            get {
+                if (Dupe == null)
+                    return false;
+                return Dupe.IsDupe; // the question is - will I have recursive values here?
+            } 
+        }
+
+        public Dupe Dupe { get; internal set; } // this is the tricky part... it might return null.
+
+        public Node Parent { get; internal set; }
+
+        public bool IsTop { get { return Parent == null; } }
+
+        public Node(string filePath, string checksum, bool isDirectory) {
+            FilePath = filePath;
+            Checksum = checksum;
+            isDirectory = isDirectory;
+        }
+
+        public void AddChildren(Node node)
+        {
+            if (!IsDirectory)
+                throw new Exception("not_a_directory");
+            children.Add(node);
+            checksums.Add(node.Checksum);
+            node.Parent = this;
+        }
+
+        public void ComputeChildrenChecksum()
+        {
+            string content = string.Join("", checksums.ToArray());
+            Checksum = ChecksumUtil.ComputeChecksumOfString(ChecksumType.SHA1, content);
+        }
+
+        internal Node()
+        {
+        }
+
+        public IEnumerator<Node> GetEnumerator() {
+            return children.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
+        public override string ToString()
+        {
+            return string.Format("<{0}>", FilePath);
+        }
     }
 
     public class Unique
@@ -52,11 +169,13 @@ namespace Kraken.Unique
         // for now we'll hold the whole thing in memory.
         // 
         // 
-        Dictionary<string, string> pathToHash = new Dictionary<string, string>();
+        Dictionary<string, Node> pathToHash = new Dictionary<string, Node>();
         // this one below WILL duplicate...
         Dictionary<string, Dupe> hashToDupe = new Dictionary<string, Dupe>();
 
         List<Dupe> duplicates = new List<Dupe>();
+
+        List<Node> parentNodes = new List<Node>();
 
         public Unique()
         {
@@ -68,75 +187,65 @@ namespace Kraken.Unique
             if (Directory.Exists(path))
             {
                 ProcessDiretory(path);
-            } else if (File.Exists(path))
-            {
-                ProcessFile(path);
             } else
             {
                 throw new Exception(string.Format("path_not_found: {0}", path));
             }
         }
 
-        public string ProcessDiretory(string dirPath)
+        public Node ProcessDiretory(string dirPath)
         {
             /// how to calculate the hash of the whole directory?
             /// it is comprised of the hash of the files + the subdirectories.
             Console.WriteLine("Process Directory: {0}", dirPath);
-            List<string> checksums = new List<string>();
+            Node current = new Node();
+            current.IsDirectory = true;
+            current.FilePath = dirPath;
             foreach (string file in Directory.GetFiles(dirPath))
             {
-                checksums.Add(ProcessFile(file));
+                current.AddChildren(ProcessFile(file));
             }
 
             foreach (string dir in Directory.GetDirectories(dirPath))
             {
-                checksums.Add(ProcessDiretory(dir));
+                current.AddChildren(ProcessDiretory(dir));
             }
-            string innerChecksums = string.Join("", checksums.ToArray());
-            string checksum = ChecksumUtil.ComputeChecksumOfString(ChecksumType.SHA1, innerChecksums);
-            AddDupe(dirPath, checksum, true);
-            return checksum;
+
+            current.ComputeChildrenChecksum();
+            AddDupe(dirPath, current, true);
+            return current;
         }
 
-        public string ProcessFile(string filePath)
+        public Node ProcessFile(string filePath)
         {
             Console.WriteLine("Process File: {0}", filePath);
             if (pathToHash.ContainsKey(filePath)) // we've visited this file before... shouldn't get here.
                 return pathToHash[filePath];
             string checksum = ChecksumUtil.ComputeChecksum(ChecksumType.SHA1, filePath);
-            AddDupe(filePath, checksum, false);
-            return checksum;
+            Node current = new Node(filePath, checksum, false);
+            AddDupe(filePath, current, false);
+            return current;
         }
 
-        public void AddDupe(string path, string checksum, bool isDir)
+        public void AddDupe(string path, Node node, bool isDir)
         {
-            pathToHash [path] = checksum;
+            pathToHash [path] = node;
+            string checksum = node.Checksum;
             if (hashToDupe.ContainsKey(checksum))
             {
-                if (!hashToDupe [checksum].isDuplicate)
+                if (!hashToDupe [checksum].IsDupe)
                     duplicates.Add(hashToDupe [checksum]);
-                hashToDupe [checksum].Add(path);
+                hashToDupe [checksum].Add(node);
             } else
             {
                 hashToDupe[checksum] = new Dupe(checksum, isDir);
-                hashToDupe[checksum].Add(path);
-            }
-        }
-
-        public void ShowDupesConsole()
-        {
-            foreach (Dupe dupe in duplicates)
-            {
-                Console.WriteLine("Duplicates: {0}", dupe.IsDirectory ? "Directories" : "Files");
-                foreach(string path in dupe) {
-                    Console.WriteLine("   {0}", path);
-                }
-                Console.WriteLine("");
+                hashToDupe[checksum].Add(node);
             }
         }
 
         public void ShowDupesHTML()
         {
+            NormalizeDupes();
             string tempFilePath = Guid.NewGuid().ToString() + ".html";
             using (FileStream fs = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
@@ -144,28 +253,61 @@ namespace Kraken.Unique
                     writer.Write("<html><head><title>Dupes</title>" +
                                 "</head>" +
                                 "<body><ul>");
-                    // maybe I want to sort these?
-                    // in general, maybe reverse will do, since the structure is FILO.
-                    duplicates.Reverse();
                     foreach (Dupe dupe in duplicates) {
-                        writer.Write("<li><p><b>");
-                        writer.Write(dupe.IsDirectory ? "Directories" : "Files");
-                        writer.Write("</b> (Checksum: ");
-                        writer.Write(dupe.Checksum);
-                        writer.Write(")</p><ul>");
-                        foreach (string path in dupe) {
-                            writer.Write("<li><a href=\"file://");
-                            writer.Write(path);
-                            writer.Write("\">");
-                            writer.Write(path);
-                            writer.Write("</a></li>");
-                        }
-                        writer.Write("</ul>");
+                        WriteDupe(dupe, writer, false);
                     }
                     writer.Write("</ul></body></html>");
                 }
             }
             System.Diagnostics.Process.Start(tempFilePath);
+        }
+
+        void NormalizeDupes() {
+            // the way to think about normalizing dupes is as follows.
+            // if they are part of a higher level dupe - we should move it into a tree structure
+            // so it's a lower level dupe rather than at the highest level.
+            // how do we achieve that?
+            // there are *free-standing* dupes - at the end we should be left with free-standing dupes.
+            // hmm... this is actually interestingly hard problem.
+            // maybe it's easier if we get it structured while building it.
+            // 
+            // 1 - we already have the Node being a big tree.
+            // 2 - 
+            duplicates.Reverse();
+            foreach (Dupe dupe in duplicates.ToArray())
+                if (dupe.IsSubDupe)
+                    duplicates.Remove(dupe);
+        }
+
+        void WriteDupe(Dupe dupe, StreamWriter writer, bool subDupe)
+        {
+            writer.Write("<li class='");
+            writer.Write(dupe.IsDirectory ? "directory" : "file");
+            writer.Write("'><p><b>");
+            writer.Write(dupe.IsDirectory ? "Directories" : "Files"); // everything under the directory is a dupe.
+            writer.Write("</b> (Checksum: ");
+            writer.Write(dupe.Checksum);
+            writer.Write(")</p><ul>");
+            foreach (Node node in dupe)
+            {
+                writer.Write("<li><a href=\"file://");
+                writer.Write(node.FilePath);
+                writer.Write("\">");
+                writer.Write(subDupe ? node.FileName : node.FilePath);
+                writer.Write("</a>");
+                writer.Write("</li>");
+            }
+
+            writer.Write("</ul>");
+            if (dupe.IsDirectory)
+            {
+                writer.Write("<ul>");
+                foreach (Dupe child in dupe.GetSubDupes()) {
+                    WriteDupe(child, writer, true);
+                }
+                writer.Write("</ul>");
+            }
+            writer.Write("</li>");
         }
     }
 }
