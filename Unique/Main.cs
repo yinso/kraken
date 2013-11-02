@@ -17,11 +17,6 @@ namespace Kraken.Unique
     /// </summary>
     class MainClass
     {
-        public static void Main3(string[] args)
-        {
-            System.Diagnostics.Process.Start(@"/Users/yc/Books/Business/Innovation Models.pdf");
-        }
-
         public static void Main(string[] args)
         {
             if (args.Length == 0)

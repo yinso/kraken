@@ -250,9 +250,9 @@ namespace Kraken.Unique
             using (FileStream fs = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 using (StreamWriter writer = new StreamWriter(fs)) {
-                    writer.Write("<html><head><title>Dupes</title>" +
+                    writer.Write("<html><head><title>Duplicate Files and Directories</title>" +
                                 "</head>" +
-                                "<body><ul>");
+                                "<body><h3>Duplicate Files and Directories</h3><ul>");
                     foreach (Dupe dupe in duplicates) {
                         WriteDupe(dupe, writer, false);
                     }
