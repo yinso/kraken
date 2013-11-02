@@ -121,7 +121,7 @@ namespace Kraken.Unique
         public Node(string filePath, string checksum, bool isDirectory) {
             FilePath = filePath;
             Checksum = checksum;
-            isDirectory = isDirectory;
+            IsDirectory = isDirectory;
         }
 
         public void AddChildren(Node node)
@@ -263,17 +263,6 @@ namespace Kraken.Unique
         }
 
         void NormalizeDupes() {
-            // the way to think about normalizing dupes is as follows.
-            // if they are part of a higher level dupe - we should move it into a tree structure
-            // so it's a lower level dupe rather than at the highest level.
-            // how do we achieve that?
-            // there are *free-standing* dupes - at the end we should be left with free-standing dupes.
-            // hmm... this is actually interestingly hard problem.
-            // maybe it's easier if we get it structured while building it.
-            // 
-            // 1 - we already have the Node being a big tree.
-            // 2 - 
-            duplicates.Reverse();
             foreach (Dupe dupe in duplicates.ToArray())
                 if (dupe.IsSubDupe)
                     duplicates.Remove(dupe);
