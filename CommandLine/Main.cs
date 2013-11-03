@@ -82,6 +82,18 @@ namespace Kraken.CommandLine
                     case "restore":
                         app.restorePath(args);
                         break;
+                    case "ls":
+                        app.listPaths(args);
+                        break;
+                    case "list":
+                        app.listPaths(args);
+                        break;
+                    case "li":
+                        app.listPaths(args);
+                        break;
+                    case "raw":
+                        app.getPath(args);
+                        break;
                     default:
                         app.unknownCommand(args [0]);
                         break;
@@ -114,7 +126,7 @@ namespace Kraken.CommandLine
             string toPath = args [2];
             if (File.Exists(fromPath))
             {
-                if (pathStore.isDirectory(toPath)) {
+                if (pathStore.IsDirectory(toPath)) {
                     // let's append the fileName to the end of the toPath.
                     pathStore.SaveOnePath(fromPath, FileUtil.ChangePathDirectory(fromPath, toPath));
                 } else {
@@ -122,10 +134,10 @@ namespace Kraken.CommandLine
                 }
             } else if (Directory.Exists(fromPath))
             {
-                if (pathStore.isBlob(toPath)) {
+                if (pathStore.IsBlob(toPath)) {
                     Console.WriteLine("Cannot save a folder into a file: {0} is a folder, and {1} is a file", fromPath, toPath);
                     return;
-                } else if (pathStore.isDirectory(toPath)) {
+                } else if (pathStore.IsDirectory(toPath)) {
                     // the question is - is this a merge? 
                     Console.WriteLine("Folder {0} exists - do you want to merge or replace?", toPath);
                     string answer = Console.ReadLine().Trim().ToLower();
@@ -156,7 +168,7 @@ namespace Kraken.CommandLine
             // for now let's handle the single file case...
             // also - how do we know whether or not it's a path or a directory?
             // we also should remember the rules of the target.
-            if (pathStore.isBlob(fromPath))
+            if (pathStore.IsBlob(fromPath))
             {
                 if (Directory.Exists(toPath))
                 {
@@ -179,7 +191,7 @@ namespace Kraken.CommandLine
                 {
                     pathStore.RestoreOnePath(fromPath, toPath);
                 }
-            } else if (pathStore.isDirectory(fromPath))
+            } else if (pathStore.IsDirectory(fromPath))
             {
                 // now we will need to restore path.
                 if (File.Exists(toPath)) {
@@ -192,6 +204,52 @@ namespace Kraken.CommandLine
             } else
             { // neither 
                 Console.WriteLine("Path {0} is not in the repo", fromPath);
+            }
+
+        }
+
+        void listPaths(string[] args)
+        {
+            string listPath = ".";
+            int depth = 0;
+            if (args.Length > 1)
+            {
+                listPath = args [1];
+                if (args.Length > 2) {
+                    if (args[2].ToLower() == "infinity") {
+                        depth = int.MaxValue;
+                    } else {
+                        depth = int.Parse(args[2]);
+                    }
+                }
+            }
+            foreach (string path in pathStore.ListPaths(listPath, depth))
+            {
+                Console.WriteLine("  {0}", path);
+            }
+        }
+
+        void getPath(string[] args)
+        {
+            if (args.Length == 1)
+            {
+                Console.WriteLine("kraken raw <kraken_repo_path> --> required");
+                return;
+            }
+            // once we have the path.
+            string path = args [1];
+            if (pathStore.IsBlob(path))
+            {
+                BlobStream blob = pathStore.GetBlob(path);
+                blob.CopyTo(Console.OpenStandardOutput());
+                return;
+            } else if (pathStore.IsDirectory(path)) {
+                Console.WriteLine("{0} is a directory", path);
+                return;
+            } else
+            {
+                Console.WriteLine("{0} is not in the repo", path);
+                return;
             }
 
         }

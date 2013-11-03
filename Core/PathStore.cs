@@ -24,6 +24,7 @@ namespace Kraken.Core
         string rootFolderPath;
         string workingFolderPath;
         BlobStore blobStore;
+        List<string> osJunkFiles = new List<string> {".DS_Store", "thumbs.db"};
 
         public RootPathMap RootPathMap { get; internal set; }
 
@@ -36,11 +37,17 @@ namespace Kraken.Core
             RootPathMap = new RootPathMap();
         }
 
-        public bool isDirectory(string virtualPath) {
+        public bool IsJunkFile(string path)
+        {
+            string fileName = System.IO.Path.GetFileName(path);
+            return osJunkFiles.Contains(fileName);
+        }
+
+        public bool IsDirectory(string virtualPath) {
             return Directory.Exists(NormalizePath(virtualPath));
         }
 
-        public bool isBlob(string virtualPath)
+        public bool IsBlob(string virtualPath)
         {
             return File.Exists(NormalizePath(virtualPath));
         }
@@ -67,6 +74,17 @@ namespace Kraken.Core
             return System.IO.Path.Combine(rootFolderPath, vPath);
         }
 
+        public string DenormalizePath(string absPath)
+        {
+            if (absPath.IndexOf(rootFolderPath) == 0)
+            {
+                return absPath.Substring(rootFolderPath.Length);
+            } else
+            {
+                return absPath;
+            }
+        }
+
         public void DeletePath(string vPath)
         {
             Path.DeletePath(NormalizePath(vPath));
@@ -77,13 +95,17 @@ namespace Kraken.Core
             Console.WriteLine("SaveFolder: {0} => {1}", filePath, toPath);
             if (File.Exists(filePath))
             {
-                SavePath(filePath, toPath);
+                if (!IsJunkFile(filePath)) {
+                    SavePath(filePath, toPath);
+                }
             } else if (Directory.Exists(filePath))
             {
                 foreach (string newFilePath in Directory.GetFiles(filePath)) {
-                    Console.WriteLine("Save {0}...", newFilePath);
-                    string fileName = System.IO.Path.GetFileName(newFilePath);
-                    SavePath(newFilePath, System.IO.Path.Combine(toPath, fileName));
+                    if (!IsJunkFile(newFilePath)) {
+                        Console.WriteLine("Save {0}...", newFilePath);
+                        string fileName = System.IO.Path.GetFileName(newFilePath);
+                        SavePath(newFilePath, System.IO.Path.Combine(toPath, fileName));
+                    }
                 }
                 foreach (string newDir in Directory.GetDirectories(filePath)) {
                     string dirName = System.IO.Path.GetFileName(newDir);
@@ -140,10 +162,37 @@ namespace Kraken.Core
             string normalizedPath = System.IO.Path.IsPathRooted(fromPath) ? fromPath : NormalizePath(fromPath);
             FileUtil.EnsureDirectory(toPath, normalizedPath);
             foreach (string filePath in Directory.GetFiles(normalizedPath)) {
-                RestoreOnePath(filePath, FileUtil.ChangePathDirectory(filePath, toPath));
+                if (!IsJunkFile(filePath)) {
+                    RestoreOnePath(filePath, FileUtil.ChangePathDirectory(filePath, toPath));
+                }
             }
             foreach (string folderPath in Directory.GetDirectories(normalizedPath)) {
                 RestoreFolder(folderPath, FileUtil.ChangePathDirectory(folderPath, toPath));
+            }
+        }
+
+        public IEnumerable<string> ListPaths(string startPath, int depth) {
+            string normPath = NormalizePath(startPath);
+            List<string> paths = new List<string>();
+            listPathHelper(normPath, depth, 0, paths);
+            return paths;
+        }
+
+        void listPathHelper(string startPath, int depth, int level, List<string> paths) {
+            string normPath = startPath;
+            if (IsDirectory(normPath)) {
+                foreach (string dirPath in Directory.GetDirectories(normPath)) {
+                    paths.Add(string.Format("{0}/", DenormalizePath(dirPath)));
+                    if (level < depth) {
+                        listPathHelper(dirPath, depth, level + 1, paths);
+                    }
+                }
+                foreach (string filePath in Directory.GetFiles(normPath)) {
+                    if (!IsJunkFile(filePath))
+                        paths.Add(DenormalizePath(filePath));
+                }
+            } else if (IsBlob(normPath)) {
+                paths.Add(startPath);
             }
         }
     }

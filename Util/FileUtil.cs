@@ -46,11 +46,14 @@ namespace Kraken.Util
 
         public static void EnsureDirectory(string dirPath, DateTime created, DateTime lastModified)
         {
-            Directory.CreateDirectory(dirPath);
-            Directory.SetCreationTimeUtc(dirPath, created);
-            Directory.SetLastWriteTimeUtc(dirPath, lastModified);
-            Directory.SetLastAccessTimeUtc(dirPath, lastModified);
-            Console.WriteLine("Dir {0} set to {1}, {2}", dirPath, created, lastModified);
+            if (!Directory.Exists(dirPath))
+            {
+                Directory.CreateDirectory(dirPath);
+                Directory.SetCreationTimeUtc(dirPath, created);
+                Directory.SetLastWriteTimeUtc(dirPath, lastModified);
+                Directory.SetLastAccessTimeUtc(dirPath, lastModified);
+                Console.WriteLine("Dir {0} set to {1}, {2}", dirPath, created, lastModified);
+            }
         }
 
         public static string ChangePathDirectory(string filePath, string newDir)
