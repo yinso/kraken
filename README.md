@@ -11,6 +11,9 @@ Prerequisite
   you'll have compilation errors.
 * .Net IDE
 
+Currently Kraken is developed under Mono on OS X and not yet tested in
+other combinations - verifications and pull requests are appreciated.
+
 Usage
 ======
 
