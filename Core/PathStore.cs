@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 
@@ -23,20 +24,33 @@ namespace Kraken.Core
         string rootFolderPath;
         string workingFolderPath;
         BlobStore blobStore;
+
+        public RootPathMap RootPathMap { get; internal set; }
+
         public PathStore(NameValueCollection settings)
         {
             rootFolderPath = System.IO.Path.Combine(settings["rootPath"], pathFolder);
             workingFolderPath = System.IO.Path.Combine(rootFolderPath, workingFolder);
             FileUtil.EnsureDirectory(workingFolderPath);
             blobStore = new BlobStore(settings);
+            RootPathMap = new RootPathMap();
         }
 
-        public Blob GetBlob(string virtualPath)
+        public bool isDirectory(string virtualPath) {
+            return Directory.Exists(NormalizePath(virtualPath));
+        }
+
+        public bool isBlob(string virtualPath)
+        {
+            return File.Exists(NormalizePath(virtualPath));
+        }
+
+        public BlobStream GetBlob(string virtualPath)
         {
             return PathToBlob(ReadPath(virtualPath));
         }
 
-        public Blob PathToBlob(Path path)
+        public BlobStream PathToBlob(Path path)
         {
             return blobStore.OpenBlob(path.Envelope.Checksum);
         }
@@ -45,7 +59,7 @@ namespace Kraken.Core
         {
             // we should load the Path object by translating this into a a fullPath.
             // the virtual Path wou
-            return Path.ParseFile(NormalizePath(virtualPath));
+            return Path.ParseFile(NormalizePath(virtualPath), true);
         }
 
         public string NormalizePath(string vPath)
@@ -67,6 +81,7 @@ namespace Kraken.Core
             } else if (Directory.Exists(filePath))
             {
                 foreach (string newFilePath in Directory.GetFiles(filePath)) {
+                    Console.WriteLine("Save {0}...", newFilePath);
                     string fileName = System.IO.Path.GetFileName(newFilePath);
                     SavePath(newFilePath, System.IO.Path.Combine(toPath, fileName));
                 }
@@ -78,6 +93,11 @@ namespace Kraken.Core
             {
                 throw new Exception(string.Format("save_folder_path_neither_file_nor_folder: {0}", filePath));
             }
+        }
+
+        public void MergeFolder(string fromPath, string toPath)
+        {
+
         }
 
         public Path SavePath(string filePath, string toPath)
@@ -99,8 +119,32 @@ namespace Kraken.Core
         public Path SaveOnePath(string filePath, string toPath) {
             string checksum = blobStore.SaveBlob(filePath);
             // now we have the checksum it's time to deal with the 
-            string saveToPath = FileUtil.CombinePath(rootFolderPath, toPath);
-            return Path.SavePath(saveToPath, workingFolderPath, checksum, DateTime.UtcNow);
+            string saveToPath = NormalizePath(toPath); 
+            return Path.SavePath(filePath, saveToPath, workingFolderPath, checksum);
+        }
+
+        public void RestoreOnePath(string fromPath, string toPath) {
+            Console.WriteLine("Restore File {0} to {1}", fromPath, toPath);
+            Path path = ReadPath(fromPath);
+            using (BlobStream blob = PathToBlob(path)) {
+                using (AtomicFileStream fs = new AtomicFileStream(toPath)) {
+                    blob.CopyTo(fs);
+                }
+            }
+            File.SetCreationTimeUtc(toPath, path.Envelope.LastModified);
+            File.SetLastWriteTimeUtc(toPath, path.Envelope.LastModified);
+        }
+
+        public void RestoreFolder(string fromPath, string toPath) {
+            Console.WriteLine("Restore Folder {0} to {1}", fromPath, toPath);
+            string normalizedPath = System.IO.Path.IsPathRooted(fromPath) ? fromPath : NormalizePath(fromPath);
+            FileUtil.EnsureDirectory(toPath, normalizedPath);
+            foreach (string filePath in Directory.GetFiles(normalizedPath)) {
+                RestoreOnePath(filePath, FileUtil.ChangePathDirectory(filePath, toPath));
+            }
+            foreach (string folderPath in Directory.GetDirectories(normalizedPath)) {
+                RestoreFolder(folderPath, FileUtil.ChangePathDirectory(folderPath, toPath));
+            }
         }
     }
 }

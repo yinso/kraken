@@ -37,7 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="Blob.cs" />
     <Compile Include="BlobStore.cs" />
     <Compile Include="BlobEnvelope.cs" />
     <Compile Include="ResourceType.cs" />
@@ -46,6 +45,8 @@
     <Compile Include="PathEnvelope.cs" />
     <Compile Include="PathVersion.cs" />
     <Compile Include="S3Store.cs" />
+    <Compile Include="BlobStream.cs" />
+    <Compile Include="RootPathMap.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

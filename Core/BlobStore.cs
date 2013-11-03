@@ -8,10 +8,48 @@ using Kraken.Util;
 
 namespace Kraken.Core
 {
+    /// <summary>
+    /// BLOB store.
+    /// 
+    /// This is the *local* version of the BlobStore, i.e. it stores the blobs (along with its metadata)
+    /// on the local filesystem.
+    /// 
+    /// The structure of the local blob store looks like the following.
+    /// 
+    /// /<blob_store_root>
+    ///   /<hash-part>/<hash-part>/.../<hash_final_part>
+    /// 
+    /// The advantage of this design is that it allows filesystem to handle the traversal and resolution.
+    /// 
+    /// Saving into the blob store basically means the following
+    /// 
+    /// 1 - calculate the checksum of the blob (default SHA1 but configurable)
+    /// 2 - prepare the blob (compression, and encryption - both configurable)
+    /// 3 - write to temp file of the following
+    ///   The *envelope* (metadata describing the blob)
+    ///   The prepared blob itself
+    /// 4 - move the blob into its actual location determined by checksum.
+    ///   NOTE - for this design, the move CAN fail if the file exists.
+    ///   and in this case we DO NOT overwrite the old blob, because we want to ensure that
+    ///   the metadata stay the same as the old blob (for example - the encryption IV).
+    /// 5 - the checksum is returned and serve as the key to retrieve the blob.
+    /// 
+    /// Retrieval is based on the checksum.
+    /// 
+    /// 1 - take the checksum, and transform it into the appropriate underlying storage path.
+    /// 2 - open the file - if it doesn't exist - throw (the calling function is expected to handle
+    ///     a failure).
+    /// 3 - if the file exist - create a Blob object that holds the envelope/metadata info, as well 
+    ///     as prepare to reverse any compression/encryption done on the data.
+    /// 4 - return the Blob for future use by the calling function.
+    /// 
+    /// </summary>
     public class BlobStore
     {
+        const string workingFolder = ".work";
+        const string blobFolder = "blob";
+
         string rootPath;
-        string workingFolder = ".work";
         string workingPath;
         ChecksumType checksumType;
         EncryptionType encryptionScheme;
@@ -24,12 +62,27 @@ namespace Kraken.Core
             EncryptionType encryptionType = EncryptionUtil.StringToEncryptionType(settings["cryptoType"]);
             string encryptionKey = settings["cryptoKey"];
             ChecksumType checksumType = ChecksumUtil.StringToChecksumType(settings["checksumType"]);
-            string storePath = System.IO.Path.Combine(settings["rootPath"], settings["blobFolder"]);
+            string storePath = System.IO.Path.Combine(settings["rootPath"], blobFolder);
             int folderLevels = int.Parse(settings["folderLevels"]);
             int folderNameLength = int.Parse(settings["folderNameLength"]);
             initialize(storePath, checksumType, encryptionType, encryptionKey, folderLevels, folderNameLength);
         }
 
+        public BlobStream OpenBlob(string checksum) {
+            string path = normalizeChecksumPath(checksum);
+            return new BlobStream(path, encryptionKey);
+        }
+        
+        public string SaveBlob(string filePath) {
+            byte[] iv = generateIV();
+            long length = fileLength(filePath);
+            string checksum = fileChecksum(filePath); 
+            bool isCompressible = fileCompressible(filePath, length);
+            string tempFile = saveToTempFile(filePath, checksum, length, iv, isCompressible);
+            moveFile(tempFile, checksum);
+            return checksum;
+        }
+        
         void initialize(string root, ChecksumType type, EncryptionType scheme, string key, int levels, int length)
         {
             rootPath = root;
@@ -46,48 +99,23 @@ namespace Kraken.Core
             folderNameLength = length;
         }
 
-        public string FileChecksum(string filePath) {
+        string fileChecksum(string filePath) {
             return ChecksumUtil.ComputeChecksum(checksumType, filePath);
         }
 
-        public long FileLength(string path)
+        long fileLength(string path)
         {
             FileInfo fi = new FileInfo(path);
             return fi.Length;
         }
 
-        public byte[] GenerateIV() {
+        byte[] generateIV() {
             return EncryptionUtil.GetRandomBytes(16);
         }
 
-        public Blob OpenBlob(string checksum) {
-            // convert the checksum to path.
-            string path = NormalizeChecksumPath(checksum);
-            // we'll need encryption key + 
-            return new Blob(path, encryptionKey);
-        }
-
-        public string SaveBlob(string filePath) {
-            // in order to store a file - we will need to go through the following steps.
-            // 1 - figure out the checksum - if the file exists we can safely ignore the rest of the steps
-            byte[] iv = GenerateIV();
-            long length = FileLength(filePath);
-            string checksum = FileChecksum(filePath); // this step is needed in order for us to figure out what to do with the file... oh well - will see how it can be optimized
-            bool isCompressible = FileCompressible(filePath, length);
-            string tempFile = SaveToTempFile(filePath, checksum, length, iv, isCompressible);
-            // finally - we can move the file to its new location.
-            // this ought to be the same logica as the local store, except we are completely managing it within 
-            // blob environment.
-            // we ought to allow this to be configurable as well...
-            // we should decide how many layers down for a given blob repo (there might be more than one).
-            MoveFile(tempFile, checksum);
-            return checksum;
-        }
-
-        public void MoveFile(string tempFile, string checksum)
+        void moveFile(string tempFile, string checksum)
         {
-            // let's convert the checksum to a filePath.
-            string checksumPath = NormalizeChecksumPath(checksum);
+            string checksumPath = normalizeChecksumPath(checksum);
             try
             {
                 File.Move(tempFile, checksumPath);
@@ -98,22 +126,20 @@ namespace Kraken.Core
             }
         }
 
-        string NormalizeChecksumPath(string checksum)
+        string normalizeChecksumPath(string checksum)
         {
-            string folderPath = ChecksumToFolderPath(checksum);
+            string folderPath = checksumToFolderPath(checksum);
             Directory.CreateDirectory(folderPath);
-            return System.IO.Path.Combine(folderPath, ChecksumToFileName(checksum));
+            return System.IO.Path.Combine(folderPath, checksumToFileName(checksum));
         }
 
-        // because this is *configurable* - we'll have to do more work for the calculation...
-        public string ChecksumToFileName(string checksum)
+        string checksumToFileName(string checksum)
         {
             return checksum.Substring(folderNameLength * folderLevels);
         }
         
-        public string ChecksumToFolderPath(string checksum)
+        string checksumToFolderPath(string checksum)
         {
-            // take the checksum and che
             string[] folders = new string[folderLevels + 1];
             folders[0] = rootPath;
             for (int i = 0; i < folderLevels; ++i)
@@ -123,16 +149,16 @@ namespace Kraken.Core
             return System.IO.Path.Combine((string[])folders);
         }
 
-        public string SaveToTempFile(string filePath, string checksum, long length, byte[] iv, bool isCompressible)
+        string saveToTempFile(string filePath, string checksum, long length, byte[] iv, bool isCompressible)
         {
             // secure a tempfile based on the checksum + the working path.
             Guid uuid = Guid.NewGuid();
             string tempFilePath = System.IO.Path.Combine(workingPath, string.Format("{0}.{1}", checksum, uuid));
             using (FileStream tempFile = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
-                BlobEnvelope envelope = MakeEnvelope(length, iv, isCompressible);
+                BlobEnvelope envelope = makeBlobEnvelope(length, iv, isCompressible);
                 envelope.WriteTo(tempFile);
                 using (FileStream input = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                    using (Stream output = GetStream(tempFile, iv, isCompressible)) {
+                    using (Stream output = getStream(tempFile, iv, isCompressible)) {
                         input.CopyTo(output);
                         output.Flush();
                         return tempFilePath;
@@ -141,29 +167,28 @@ namespace Kraken.Core
             }
         }
 
-        Stream GetStream(Stream s, byte[] iv, bool isCompressible)
+        Stream getStream(Stream s, byte[] iv, bool isCompressible)
         {
-            Stream result = s;
+            Stream resultStream = s;
             if (encryptionScheme != EncryptionType.NONE)
             {
-                result = EncryptionUtil.GetEncryptStream(result, encryptionScheme, encryptionKey, iv);
-                // we'll get the encryption figured out...
+                resultStream = EncryptionUtil.GetEncryptStream(resultStream, encryptionScheme, encryptionKey, iv);
             }
             if (isCompressible)
             {
-                result = CompressUtil.GetCompressStream(result);
+                resultStream = CompressUtil.GetCompressStream(resultStream);
             }
-            return result;
+            return resultStream;
         }
 
-        void WriteString(Stream dest, string str)
+        void writeString(Stream dest, string str)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(str);
             dest.Write(bytes, 0, bytes.Length);
         }
 
 
-        public BlobEnvelope MakeEnvelope(long length, byte[] iv, bool isCompressible)
+        BlobEnvelope makeBlobEnvelope(long length, byte[] iv, bool isCompressible)
         {
             BlobEnvelope envelope = new BlobEnvelope();
             envelope.OriginalLength = length;
@@ -173,17 +198,12 @@ namespace Kraken.Core
             return envelope;
         }
 
-        public bool FileCompressible(string filePath, long length) {
-            // if the file is under a particular threshold, we'll test encrypt the whole thing.
-            // otherwise we'll encrypt just a portion of it.
-            // let's say the threashold is 1MB.
-            long threshold = 1024 * 1024;
-            long gain = 1024;
-            // in either case - we'll compress up to this particular point.
-            // we'll need to control a particular amount to copy over... 
+        // this might belong with CompressUtil.
+        bool fileCompressible(string filePath, long length) {
+            long uptoBytes = 1024 * 1024;
             using (MemoryStream ms = new MemoryStream()) {
                 using (FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                    return CompressUtil.IsCompressible(fs, ms, threshold);
+                    return CompressUtil.IsCompressible(fs, ms, uptoBytes);
                 }
             }
         }

@@ -123,6 +123,7 @@ namespace Kraken.Core
     public class PathVersion {
         public string Checksum { get; internal set; }
         public DateTime Timestamp { get; internal set; } // this is equivalent to the modified timestamp. not tracking accessed time.
+        public long Length { get; internal set; }
         public NameValueCollection KeyVals { get; internal set; }
 
         public PathVersion() {
@@ -142,7 +143,8 @@ namespace Kraken.Core
                 PathVersion obj = new PathVersion();
                 obj.Checksum = parts[0];
                 obj.Timestamp = DateTime.Parse(parts[1]).ToUniversalTime();
-                if (parts.Length > 2) {
+                obj.Length = long.Parse(parts[2]);
+                if (parts.Length > 3) {
                     obj.KeyVals = UriUtil.ParseQueryString(parts[2]);
                 }
                 return obj;
@@ -157,15 +159,18 @@ namespace Kraken.Core
             string line;
             if (KeyVals.Count > 0)
             {
-                line = string.Format("{0} {1}\r\n"
+                line = string.Format("{0} {1} {2} {3}\r\n"
                                      , Checksum
                                      , Timestamp.ToString("o")
+                                     , Length
                                      , UriUtil.NameValueCollectionToQueryString(KeyVals));
             } else
             {
-                line = string.Format("{0} {1}\r\n"
+                line = string.Format("{0} {1} {2}\r\n"
                                      , Checksum
-                                     , Timestamp.ToString("o"));
+                                     , Timestamp.ToString("o")
+                                     , Length
+                                     );
             }
             return Encoding.UTF8.GetBytes(line);
         }

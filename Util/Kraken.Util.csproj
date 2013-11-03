@@ -44,6 +44,9 @@
     <Compile Include="FileUtil.cs" />
     <Compile Include="ByteUtil.cs" />
     <Compile Include="UriUtil.cs" />
+    <Compile Include="IniFile.cs" />
+    <Compile Include="StringUtil.cs" />
+    <Compile Include="AtomicFileStream.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

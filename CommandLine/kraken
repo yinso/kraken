@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Absolute path to this script, e.g. /home/user/bin/foo.sh
+SCRIPT=$(readlink -n "$0")
+# Absolute path this script is in, thus /home/user/bin
+SCRIPTPATH=$(dirname "$SCRIPT")
+echo "$@"
+/usr/bin/env mono "$SCRIPTPATH/kraken.exe" "$@"

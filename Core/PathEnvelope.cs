@@ -126,6 +126,7 @@ namespace Kraken.Core
         public string Checksum { get; internal set; }
         public DateTime Created { get; internal set; } 
         public DateTime LastModified { get; internal set; }
+        public long Length { get; internal set; } // optimize additional information.
         public NameValueCollection KeyVals { get; internal set; }
 
         public PathEnvelope() { 
@@ -136,7 +137,7 @@ namespace Kraken.Core
         {
             string line = reader.ReadLine();
             string[] parts = line.Split(new char[]{' '});
-            if (parts.Length < 5) 
+            if (parts.Length < 6) 
                 throw new Exception(string.Format("invalid_path_envelope_format: {0}", line));
             try
             {
@@ -146,7 +147,8 @@ namespace Kraken.Core
                 envelope.Checksum = parts[2]; // this is the checksum.
                 envelope.Created = DateTime.Parse(parts[3]).ToUniversalTime();
                 envelope.LastModified = DateTime.Parse(parts[4]).ToUniversalTime();
-                if (parts.Length > 5) {
+                envelope.Length = long.Parse(parts[5]);
+                if (parts.Length > 6) {
                     // we'll parse the collection.
                     envelope.KeyVals = UriUtil.ParseQueryString(parts[4]);
                 }
@@ -162,21 +164,23 @@ namespace Kraken.Core
             string line;
             if (KeyVals.Count > 0)
             {
+                line = string.Format("{0} {1} {2} {3} {4} {5} {6}\r\n"
+                                     , type
+                                     , Version
+                                     , Checksum
+                                     , Created.ToString("o")
+                                     , LastModified.ToString("o")
+                                     , Length.ToString()
+                                     , UriUtil.NameValueCollectionToQueryString(KeyVals));
+            } else
+            {
                 line = string.Format("{0} {1} {2} {3} {4} {5}\r\n"
                                      , type
                                      , Version
                                      , Checksum
                                      , Created.ToString("o")
                                      , LastModified.ToString("o")
-                                     , UriUtil.NameValueCollectionToQueryString(KeyVals));
-            } else
-            {
-                line = string.Format("{0} {1} {2} {3} {4}\r\n"
-                                     , type
-                                     , Version
-                                     , Checksum
-                                     , Created.ToString("o")
-                                     , LastModified.ToString("o")
+                                     , Length.ToString()
                                      );
             }
             return Encoding.UTF8.GetBytes(line);

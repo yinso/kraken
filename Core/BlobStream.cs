@@ -48,7 +48,7 @@ namespace Kraken.Core
     /// Blob will simply attempt to OPEN a Blob, and handle the needed processing. 
     /// 
     /// </summary>
-    public class Blob : Stream
+    public class BlobStream : Stream
     {
         string filePath;
         Stream inner;
@@ -65,7 +65,7 @@ namespace Kraken.Core
         public BlobEnvelope Envelope { get; internal set; }
 
         // do I want this to represent the stream? I think so...
-        public Blob(string path, byte[] key)
+        public BlobStream(string path, byte[] key)
         {
             filePath = path;
             encryptionKey = key;

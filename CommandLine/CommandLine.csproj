@@ -21,7 +21,7 @@
     <WarningLevel>4</WarningLevel>
     <Externalconsole>True</Externalconsole>
     <PlatformTarget>x86</PlatformTarget>
-    <Commandlineparameters>out 1ba56ffafe05894edc0689ee3d0b1d047063b1a1 in ../../Main.cs  </Commandlineparameters>
+    <Commandlineparameters>save ~/temp/test1 test1</Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>none</DebugType>
@@ -42,11 +42,18 @@
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="MimeType.cs" />
+    <Compile Include="Test.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="kraken.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="kraken">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Http\Http.csproj">

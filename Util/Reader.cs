@@ -13,7 +13,7 @@ namespace Kraken.Util
         BinaryReader reader;
         public Reader(Stream s)
         {
-            if (s is MemoryStream || s is Buffer) 
+            if (s is MemoryStream || s is Buffer || s is FileStream) 
                 stream = s;
             else 
                 stream = new Buffer(s);

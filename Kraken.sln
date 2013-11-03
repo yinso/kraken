@@ -39,7 +39,7 @@ Global
 		{9D408356-F544-48BF-BA43-3F63D2649452}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Unique\Kraken.Unique.csproj
+		StartupItem = CommandLine\CommandLine.csproj
 		Policies = $0
 		$0.TextStylePolicy = $1
 		$1.inheritsSet = VisualStudio

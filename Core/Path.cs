@@ -16,6 +16,7 @@ namespace Kraken.Core
     /// 
     /// Path obj = Path.StoreFile(filePath, toPath, checksum, timestamp); 
     /// 
+    /// 
     /// </summary>
     public class Path // the thing about this is that it's a lazy collection. i.e. we aren't going to load pass the 
     { 
@@ -27,33 +28,47 @@ namespace Kraken.Core
 
         string fullPath;
 
-        protected Path(string path)
+        bool lazy;
+
+        protected Path(string path, bool lazy)
         {
             fullPath = path; // this will give us a chance to reload the filestream as needed.
+            this.lazy = lazy;
+            // we can load the things in here if the path exists..
             Envelope = new PathEnvelope();
             Versions = new List<PathVersion>();
+            if (File.Exists(fullPath))
+            {
+                loadPath();
+            } else if (Directory.Exists(fullPath)) {
+                throw new Exception("path_needs_to_map_to_file");
+            } 
         }
 
-        public static Path ParseFile(string filePath)
+        void loadPath()
         {
-            using (FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream fs = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return Parse(fs, filePath);
-            }
-        }
-
-        public static Path Parse(Stream s, string filePath)
-        {
-            using (Reader reader = new Reader(s))
-            {
-                Path path = new Path(filePath);
-                path.Envelope = PathEnvelope.Parse(reader);
-                // then what? 
-                while (reader.PeekByte() != -1) {
-                    path.Versions.Add(PathVersion.Parse(reader));
+                using (Reader reader = new Reader(fs))
+                {
+                    Envelope = PathEnvelope.Parse(reader);
+                    if (!lazy)
+                        while (reader.PeekByte() != -1)
+                        {
+                            Versions.Add(PathVersion.Parse(reader));
+                        }
                 }
-                return path;
             }
+        }
+
+        public static bool Exists(string filePath)
+        {
+            return File.Exists(filePath);
+        }
+
+        public static Path ParseFile(string filePath, bool lazy)
+        {
+            return new Path(filePath, lazy);
         }
 
         public static void DeletePath(string fullPath, bool recursive)
@@ -112,35 +127,26 @@ namespace Kraken.Core
 
         }
 
-        public static Path SavePath(string fullPath, string workingDir, string checksum, DateTime timestamp)
+        public static Path SavePath(string fromPath, string toPath, string workingDir, string checksum)
         {
             Path path;
-            FileUtil.EnsurePathDirectory(fullPath);
-            try
-            {
-                using (FileStream fs = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                    //using (Stream gz = CompressUtil.GetDecompressStream(fs)) {
-                    path = Parse(fs, fullPath);
-                    if (path.Envelope.Checksum == checksum) 
-                        return path;
-                    path.Envelope.Checksum = checksum;
-                    path.Envelope.LastModified = timestamp;
-                    //}
-                }
-            } catch (FileNotFoundException)
-            {
-                path = new Path(fullPath);
-                path.Envelope.Checksum = checksum;
-                path.Envelope.Created = timestamp;
-                path.Envelope.LastModified = timestamp;
-            }
+            FileInfo fi = new FileInfo(fromPath);
+            DateTime timestamp = fi.LastWriteTimeUtc;
+            FileUtil.EnsurePathDirectory(toPath, System.IO.Path.GetDirectoryName(fromPath));
+            path = new Path(toPath, false);
+            if (path.Envelope.Checksum == checksum) 
+                return path;
+            path.Envelope.Checksum = checksum;
+            path.Envelope.LastModified = timestamp;
             setNewVersion(path, checksum, timestamp);
-            string tempPath = FileUtil.TempFilePath(fullPath, workingDir);
+            string tempPath = FileUtil.TempFilePath(toPath, workingDir);
             // time to serialize to a temp file, and then *move* the file over the existing file.
             using (FileStream tempFile = FileUtil.OpenTempFile(tempPath, true)) {
                 path.WriteTo(tempFile);
             }
-            FileUtil.Rename(tempPath, fullPath);
+            FileUtil.Rename(tempPath, toPath);
+            File.SetCreationTimeUtc(toPath, fi.CreationTimeUtc);
+            File.SetLastWriteTimeUtc(toPath, fi.LastWriteTimeUtc);
             return path;
         }
 
@@ -161,4 +167,3 @@ namespace Kraken.Core
         }
     }
 }
-
