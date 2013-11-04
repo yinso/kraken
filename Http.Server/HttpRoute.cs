@@ -40,17 +40,90 @@ namespace Kraken.HttpServer
 
         public bool IsParameter { get; private set; }
 
-
-        public UrlSegmentMatcher(string seg)
+        public bool IsLiteral
         {
+            get { return !IsParameter; }
+        }
+
+        public bool IsSplat { get; private set; }
+
+        public UrlSegmentMatcher Next { get; private set; }
+
+        public UrlSegmentMatcher(string url)
+        {
+            initialize(url, new Dictionary<string, UrlSegmentMatcher>());
+        }
+
+        public UrlSegmentMatcher(string url, Dictionary<string, UrlSegmentMatcher> urlParams)
+        {
+            initialize(url, urlParams);
+        }
+
+        void initialize(string url, Dictionary<string, UrlSegmentMatcher> urlParams) {
+            string[] urlSeg = segmentize(url);
+            string seg = urlSeg[0];
             if (seg.StartsWith(":"))
             {
                 IsParameter = true;
                 Segment = seg.Substring(1);
+                if (urlParams.ContainsKey(Segment)) {
+                    throw new Exception(string.Format("duplicate_url_param: {0} in {1}", Segment, url));
+                } else {
+                    urlParams[Segment] = this;
+                }
+            } else if (seg.EndsWith("*"))
+            { // this will consume everything after this point!
+                IsParameter = true;
+                IsSplat = true;
+                Segment = seg.Substring(0, seg.Length - 1);
+                if (urlParams.ContainsKey(Segment)) {
+                    throw new Exception(string.Format("duplicate_url_param: {0} in {1}", Segment, url));
+                } else {
+                    urlParams[Segment] = this;
+                }
+                if (seg != url) 
+                    throw new Exception(string.Format("splat_must_end_url_segment: {0} in {1}", seg, url));
             } else
             {
                 IsParameter = false;
                 Segment = seg;
+            }
+            if (urlSeg.Length > 1)
+            {
+                Next = new UrlSegmentMatcher(urlSeg[1]);
+            }
+        }
+
+        string[] segmentize(string url)
+        {
+            return url.Split(new char[]{'/'}, 2);
+        }
+
+        public bool MatchUrl(string url, HttpRouteMatch match)
+        {
+            if (IsSplat)
+            { 
+                match.UrlParams[Segment] = url;
+                return true;
+            } else 
+            {
+                string[] segs = segmentize(url);
+                if (IsParameter) {
+                    match.UrlParams[Segment] = segs[0];
+                } else if (segs[0] != Segment) {
+                    return false;
+                } 
+                if (Next != null) {
+                    if (segs.Length > 1) {
+                        return Next.MatchUrl(segs[1], match);
+                    } else {
+                        return false;
+                    }
+                } else if (segs.Length > 1) {
+                    return false;
+                } else {
+                    return true;
+                }
             }
         }
 
@@ -75,7 +148,7 @@ namespace Kraken.HttpServer
         string method;
         string url;
         HttpCallback callback;
-        List<UrlSegmentMatcher> matchers = new List<UrlSegmentMatcher>();
+        UrlSegmentMatcher matcher;
         Dictionary<string, UrlSegmentMatcher> urlParams = new Dictionary<string, UrlSegmentMatcher>();
         // we'll support similar routing as express.
         public HttpRoute(string method, string url, HttpCallback callback)
@@ -88,45 +161,17 @@ namespace Kraken.HttpServer
 
         void parseUrl()
         {
-            string[] segments = url.Split(new char[]{'/'});
-            foreach (string seg in segments)
-            {
-                UrlSegmentMatcher matcher = new UrlSegmentMatcher(seg);
-                matchers.Add(matcher);
-                if (matcher.IsParameter) {
-                    if (urlParams.ContainsKey(matcher.Segment)) {
-                        throw new Exception(string.Format("duplicate_url_route_segment: {0} in {1}", matcher.Segment, url));
-                    } else {
-                        urlParams[matcher.Segment] = matcher;
-                    }
-                }
-            }
+            matcher = new UrlSegmentMatcher(url);
         }
 
-        // do we return something that has the following.
         public HttpRouteMatch Match(HttpListenerContext context) {
             HttpRouteMatch match = new HttpRouteMatch();
             if (method.ToLower() != context.Request.HttpMethod.ToLower()) 
                 return match;
-            urlMatch(context.Request.RawUrl, match);
+            match.IsSuccess = matcher.MatchUrl(context.Request.RawUrl, match);
             if (match.IsSuccess)
                 match.Callback = this.callback;
             return match;
-        }
-
-        void urlMatch(string url, HttpRouteMatch match) {
-            // the first thing we do is to split the url into segments.
-            string[] segments = url.Split(new char[]{'/'});
-            // the segments need to have the same length.
-            if (segments.Length != this.matchers.Count)
-                return;
-            // once the segments are the same length... it's time to iterate through them.
-            for (int i = 0; i < this.matchers.Count; ++i) {
-                bool result = matchers[i].Match(segments[i], match);
-                if (!result)
-                    return;
-            }
-            match.IsSuccess = true;
         }
     }
 

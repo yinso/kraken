@@ -27,7 +27,15 @@ namespace Kraken.HttpServer
             }
             AddRoute("get", "/favicon.ico", WebServer.defaultNotFound);
             AddRoute("get", "/", WebServer.defaultContext);
-            // AddRoute("get", "/*") allow for matching the rest of the segments...
+            AddRoute("get", "/*", WebServer.defaultSplat); // allow for matching the rest of the segments...
+        }
+
+        static void defaultSplat(HttpListenerContext ctx)
+        {
+            byte[] response = Encoding.UTF8.GetBytes(string.Format("<html><body>URL: {0}</body></html>", ctx.Request.RawUrl));
+            ctx.Response.StatusCode = 200;
+            ctx.Response.ContentLength64 = response.Length;
+            ctx.Response.OutputStream.Write(response, 0, response.Length);
         }
 
         static void defaultNotFound(HttpListenerContext ctx)
