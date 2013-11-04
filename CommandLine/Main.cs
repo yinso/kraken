@@ -94,6 +94,9 @@ namespace Kraken.CommandLine
                     case "raw":
                         app.getPath(args);
                         break;
+                    case "checksum":
+                        app.checksum(args);
+                        break;
                     default:
                         app.unknownCommand(args [0]);
                         break;
@@ -138,13 +141,11 @@ namespace Kraken.CommandLine
                     Console.WriteLine("Cannot save a folder into a file: {0} is a folder, and {1} is a file", fromPath, toPath);
                     return;
                 } else if (pathStore.IsDirectory(toPath)) {
-                    // the question is - is this a merge? 
-                    Console.WriteLine("Folder {0} exists - do you want to merge or replace?", toPath);
+                    Console.Write("Folder {0} exists - do you want to merge or replace? [m/r] ", toPath);
                     string answer = Console.ReadLine().Trim().ToLower();
-                    if (answer == "1") {
-                        pathStore.MergeFolder(fromPath, toPath);
-                        Console.WriteLine("Merge is currently unsupported yet (soon!)");
-                    } else if (answer == "2") {
+                    if (answer == "m") {
+                        pathStore.SaveFolder(fromPath, toPath);
+                    } else if (answer == "r") {
                         Console.WriteLine("Replace is currently unsupported yet (soon!)");
                     }
                 } else {
@@ -177,7 +178,7 @@ namespace Kraken.CommandLine
                 } else if (File.Exists(toPath))
                 {
                     // this means we are overwriting the file.
-                    Console.WriteLine("File {0} exists - do you want to overwrite? [y/n]", toPath);
+                    Console.Write("File {0} exists - do you want to overwrite? [y/n] ", toPath);
                     string answer = Console.ReadLine().Trim().ToLower();
                     if (answer == "y")
                     {
@@ -252,6 +253,15 @@ namespace Kraken.CommandLine
                 return;
             }
 
+        }
+
+        void checksum(string[] args)
+        {
+            if (args.Length == 1)
+            {
+                Console.WriteLine("kraken checksum <local_path> --> required");
+                return;
+            }
         }
 
         void ensureKrakenBase()
