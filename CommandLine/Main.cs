@@ -16,6 +16,7 @@ using System.Configuration;
 
 using Kraken.Util;
 using Kraken.Core;
+using Kraken.HttpServer;
 
 namespace Kraken.CommandLine
 {
@@ -59,6 +60,8 @@ namespace Kraken.CommandLine
         string rootPath;
         IniFile iniFile; 
         PathStore pathStore;
+        WebServer server;
+
         protected MainClass() {
             ensureKrakenBase();
         }
@@ -96,6 +99,9 @@ namespace Kraken.CommandLine
                         break;
                     case "checksum":
                         app.checksum(args);
+                        break;
+                    case "http":
+                        app.callHttp(args);
                         break;
                     default:
                         app.unknownCommand(args [0]);
@@ -141,12 +147,15 @@ namespace Kraken.CommandLine
                     Console.WriteLine("Cannot save a folder into a file: {0} is a folder, and {1} is a file", fromPath, toPath);
                     return;
                 } else if (pathStore.IsDirectory(toPath)) {
-                    Console.Write("Folder {0} exists - do you want to merge or replace? [m/r] ", toPath);
+                    Console.Write("Folder {0} exists - do you want to [m]erge or [r]eplace? [m/r] ", toPath);
                     string answer = Console.ReadLine().Trim().ToLower();
                     if (answer == "m") {
                         pathStore.SaveFolder(fromPath, toPath);
                     } else if (answer == "r") {
                         Console.WriteLine("Replace is currently unsupported yet (soon!)");
+                    } else {
+                        Console.WriteLine("Unknown response.");
+                        return;
                     }
                 } else {
                     pathStore.SaveFolder(fromPath, toPath);
@@ -185,7 +194,6 @@ namespace Kraken.CommandLine
                         pathStore.RestoreOnePath(fromPath, toPath);
                     } else
                     {
-                        // do nothing.
                         return;
                     }
                 } else
@@ -262,6 +270,22 @@ namespace Kraken.CommandLine
                 Console.WriteLine("kraken checksum <local_path> --> required");
                 return;
             }
+        }
+
+        void callHttp(string[] args)
+        {
+            // ***THIS IS EXPERIMENTAL RIGHT NOW*** i.e. not hooked up.
+            // we'll need to "block" the call.
+            if (args.Length < 2)
+            {
+                Console.WriteLine("kraken http <start|stop> --> required");
+                return;
+            }
+            server = new WebServer("http://*:8080/");
+            server.Start();
+            Console.WriteLine("kraken http is being developed - this is experimental");
+            Console.WriteLine("Server Listening - Press any key to stop...");
+            Console.ReadKey();
         }
 
         void ensureKrakenBase()

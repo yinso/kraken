@@ -21,7 +21,7 @@
     <WarningLevel>4</WarningLevel>
     <Externalconsole>True</Externalconsole>
     <PlatformTarget>x86</PlatformTarget>
-    <Commandlineparameters>raw test1/.DS_Store</Commandlineparameters>
+    <Commandlineparameters>http start</Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>none</DebugType>
@@ -67,6 +67,10 @@
     <ProjectReference Include="..\Core\Kraken.Core.csproj">
       <Project>{8191E64D-8C83-4905-8B04-8EBB9F1CD65D}</Project>
       <Name>Kraken.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Http.Server\Http.Server.csproj">
+      <Project>{E2DC10C8-95DB-40BD-90B8-97CF7B4E0687}</Project>
+      <Name>Http.Server</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>
