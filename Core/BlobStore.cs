@@ -155,7 +155,7 @@ namespace Kraken.Core
             Guid uuid = Guid.NewGuid();
             string tempFilePath = System.IO.Path.Combine(workingPath, string.Format("{0}.{1}", checksum, uuid));
             using (FileStream tempFile = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
-                BlobEnvelope envelope = makeBlobEnvelope(length, iv, isCompressible);
+                BlobEnvelope envelope = makeBlobEnvelope(checksum, length, iv, isCompressible);
                 envelope.WriteTo(tempFile);
                 using (FileStream input = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
                     using (Stream output = getStream(tempFile, iv, isCompressible)) {
@@ -188,9 +188,10 @@ namespace Kraken.Core
         }
 
 
-        BlobEnvelope makeBlobEnvelope(long length, byte[] iv, bool isCompressible)
+        BlobEnvelope makeBlobEnvelope(string checksum, long length, byte[] iv, bool isCompressible)
         {
             BlobEnvelope envelope = new BlobEnvelope();
+            envelope.Checksum = checksum;
             envelope.OriginalLength = length;
             envelope.CompressionScheme = isCompressible ? CompressionType.GZIP : CompressionType.NONE;
             envelope.EncryptionScheme = encryptionScheme;

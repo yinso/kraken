@@ -16,7 +16,7 @@ using System.Configuration;
 
 using Kraken.Util;
 using Kraken.Core;
-using Kraken.HttpServer;
+using Kraken.Http;
 
 namespace Kraken.CommandLine
 {
@@ -60,7 +60,7 @@ namespace Kraken.CommandLine
         string rootPath;
         IniFile iniFile; 
         PathStore pathStore;
-        WebServer server;
+        HttpServer server;
 
         protected MainClass() {
             ensureKrakenBase();
@@ -281,11 +281,44 @@ namespace Kraken.CommandLine
                 Console.WriteLine("kraken http <start|stop> --> required");
                 return;
             }
-            server = new WebServer("http://*:8080/");
+            if (server == null)
+            {
+                server = new HttpServer("http://*:8080/");
+                server.AddRoute("get", "/path...", this.httpGetPath);
+            }
             server.Start();
             Console.WriteLine("kraken http is being developed - this is experimental");
             Console.WriteLine("Server Listening - Press any key to stop...");
             Console.ReadKey();
+        }
+
+        void httpGetPath(HttpContext context)
+        {
+
+            var path = context.UrlParams ["path"];
+            Console.WriteLine("GET: {0}", path);
+            if (pathStore.IsBlob(path))
+            {
+                using (BlobStream blob = pathStore.GetBlob(path)) {
+                    if (context.Request.Headers["If-None-Match"] == blob.Envelope.Checksum) {
+                        context.Response.StatusCode = 304;
+                        context.Response.Headers["ETag"] = blob.Envelope.Checksum;
+                        context.Response.ContentLength64 = 0;
+                        blob.Close();
+                        Console.WriteLine("got here");
+                    } else {
+                        context.Response.StatusCode = 200;
+                        context.Response.ContentLength64 = blob.Length;
+                        context.Response.Headers["ETag"] = blob.Envelope.Checksum;
+                        // OK - how do I know the mime type?
+                        blob.CopyTo(context.Response.OutputStream);
+                    }
+                }
+            } else
+            {
+                context.Response.StatusCode = 404;
+                context.Response.ContentLength64 = 0;
+            }
         }
 
         void ensureKrakenBase()

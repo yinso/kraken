@@ -45,6 +45,9 @@
     <Compile Include="ChunkedStream.cs" />
     <Compile Include="Body.cs" />
     <Compile Include="ContentHeader.cs" />
+    <Compile Include="HttpContext.cs" />
+    <Compile Include="HttpServer.cs" />
+    <Compile Include="HttpRoute.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

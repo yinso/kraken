@@ -61,7 +61,7 @@ namespace Kraken.Core
         //byte[] encryptionIV = new byte[0];
         long headerOffset = 0;
         byte[] encryptionKey;
-
+        bool isOpen = false;
         public BlobEnvelope Envelope { get; internal set; }
 
         // do I want this to represent the stream? I think so...
@@ -74,7 +74,6 @@ namespace Kraken.Core
             parseEnvelope();
             // we should figure out what the offset is here...
             headerOffset = reader.Position;
-            setupStream();
         }
 
         public static void CreateBlob(Stream s, string filePath)
@@ -88,15 +87,19 @@ namespace Kraken.Core
 
         void setupStream()
         {
-            // before we use the inner stream - we need to have it SET to the Reader's position.
-            inner.Position = reader.Position;
-            if (Envelope.EncryptionScheme != EncryptionType.NONE)
+            if (!isOpen)
             {
-                inner = EncryptionUtil.GetDecryptStream(inner, Envelope.EncryptionScheme, encryptionKey, Envelope.EncryptionIV);
-            }
-            if (Envelope.CompressionScheme == CompressionType.GZIP)
-            {
-                inner = CompressUtil.GetDecompressStream(inner);
+                // before we use the inner stream - we need to have it SET to the Reader's position.
+                inner.Position = reader.Position;
+                if (Envelope.EncryptionScheme != EncryptionType.NONE)
+                {
+                    inner = EncryptionUtil.GetDecryptStream(inner, Envelope.EncryptionScheme, encryptionKey, Envelope.EncryptionIV);
+                }
+                if (Envelope.CompressionScheme == CompressionType.GZIP)
+                {
+                    inner = CompressUtil.GetDecompressStream(inner);
+                }
+                isOpen = true;
             }
         }
 
@@ -158,12 +161,14 @@ namespace Kraken.Core
         
         public override int Read(byte[] bytes, int offset, int count)
         {
+            setupStream();
             // do I have much use for the reader beyond reading the headers? No not really.
             return inner.Read(bytes, offset, count);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            setupStream();
             return inner.Seek(offset, origin);
         }
         
