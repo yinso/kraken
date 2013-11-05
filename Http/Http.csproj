@@ -48,6 +48,7 @@
     <Compile Include="HttpContext.cs" />
     <Compile Include="HttpServer.cs" />
     <Compile Include="HttpRoute.cs" />
+    <Compile Include="MimeTypeRegistry.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -55,5 +56,10 @@
       <Project>{96B994B2-42F4-40F2-94A7-0A1D14CAA8F0}</Project>
       <Name>Kraken.Util</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mime.types">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

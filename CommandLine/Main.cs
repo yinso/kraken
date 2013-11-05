@@ -17,6 +17,7 @@ using System.Configuration;
 using Kraken.Util;
 using Kraken.Core;
 using Kraken.Http;
+using Http;
 
 namespace Kraken.CommandLine
 {
@@ -61,7 +62,7 @@ namespace Kraken.CommandLine
         IniFile iniFile; 
         PathStore pathStore;
         HttpServer server;
-
+        MimeTypeRegistry mimeTypes = new MimeTypeRegistry();
         protected MainClass() {
             ensureKrakenBase();
         }
@@ -304,13 +305,20 @@ namespace Kraken.CommandLine
                         context.Response.StatusCode = 304;
                         context.Response.Headers["ETag"] = blob.Envelope.Checksum;
                         context.Response.ContentLength64 = 0;
+                        string mimeType = mimeTypes.PathToMimeType(path);
+                        if (!string.IsNullOrEmpty(mimeType)) 
+                            context.Response.ContentType = mimeType;
+                        Console.WriteLine("ContentType: {0} -> {1} => {2}", path, mimeType, context.Response.ContentType);
                         blob.Close();
                         Console.WriteLine("got here");
                     } else {
                         context.Response.StatusCode = 200;
                         context.Response.ContentLength64 = blob.Length;
                         context.Response.Headers["ETag"] = blob.Envelope.Checksum;
-                        // OK - how do I know the mime type?
+                        string mimeType = mimeTypes.PathToMimeType(path);
+                        if (!string.IsNullOrEmpty(mimeType)) 
+                            context.Response.ContentType = mimeType;
+                        Console.WriteLine("ContentType: {0} -> {1} => {2}", path, mimeType, context.Response.ContentType);
                         blob.CopyTo(context.Response.OutputStream);
                     }
                 }

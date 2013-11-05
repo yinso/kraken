@@ -4,6 +4,8 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Net.Http;
 
+using Kraken.Util;
+
 namespace Kraken.Http
 {
     public class HttpRouteMatch {
@@ -157,7 +159,7 @@ namespace Kraken.Http
             HttpRouteMatch match = new HttpRouteMatch();
             if (method.ToLower() != context.Request.HttpMethod.ToLower()) 
                 return match;
-            match.IsSuccess = matcher.MatchUrl(context.Request.RawUrl, match);
+            match.IsSuccess = matcher.MatchUrl(UriUtil.URLDecode(context.Request.Url.AbsolutePath), match);
             if (match.IsSuccess)
                 match.Callback = this.callback;
             return match;
