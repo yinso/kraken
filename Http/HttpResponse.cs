@@ -46,8 +46,8 @@ namespace Kraken.Http
             }
         }
 
-        public void SetOutput(string output) {
-            SetOutput(Encoding.UTF8.GetBytes(output));
+        public void SetOutput(string fmt, params object[] args) {
+            SetOutput(Encoding.UTF8.GetBytes(string.Format(fmt, (object[])args)));
         }
 
         public void SetOutput(byte[] bytes) {
@@ -71,6 +71,15 @@ namespace Kraken.Http
                 s.CopyTo(inner.OutputStream);
                 inner.OutputStream.Close();
             }
+        }
+
+        public void Respond(int statusCode) {
+            Respond(statusCode, "");
+        }
+
+        public void Respond(int statusCode, string fmt, params object[] args) {
+            StatusCode = statusCode;
+            SetOutput(string.Format(fmt, (object[])args));
         }
     }
 }

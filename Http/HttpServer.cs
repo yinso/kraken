@@ -33,14 +33,12 @@ namespace Kraken.Http
 
         static void defaultSplat(HttpContext ctx)
         {
-            ctx.Response.StatusCode = 200;
-            ctx.Response.SetOutput(string.Format("<html><body>URL: {0}</body></html>", ctx.Request.RawUrl));
+            ctx.Response.Respond(200, "<html><body>URL: {0}</body></html>", ctx.Request.RawUrl);
         }
 
         static void defaultNotFound(HttpContext ctx)
         {
-            ctx.Response.StatusCode = 404;
-            ctx.Response.SetOutput("");
+            ctx.Response.Respond(404, "");
         }
 
         // Keep-Alive is not implemented at this time.
@@ -53,7 +51,7 @@ namespace Kraken.Http
                 } else {
                     ctx.Response.StatusCode = 500;
                 }
-                ctx.Response.SetOutput(string.Format("<html><body><h3>Error</h3><p>Error: {0}</p></body></html>", ctx.Error));
+                ctx.Response.SetOutput("<html><body><h3>Error</h3><p>Error: {0}</p></body></html>", ctx.Error);
             } else
             {
                 ctx.Response.StatusCode = 500;

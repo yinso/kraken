@@ -217,7 +217,6 @@ namespace Kraken.CommandLine
             { // neither 
                 Console.WriteLine("Path {0} is not in the repo", fromPath);
             }
-
         }
 
         void listPaths(string[] args)
@@ -328,8 +327,7 @@ namespace Kraken.CommandLine
                 }
             } else
             {
-                context.Response.StatusCode = 404;
-                context.Response.SetOutput("");
+                throw new HttpException(404);
             }
         }
 
@@ -347,8 +345,7 @@ namespace Kraken.CommandLine
                 // it does look like that we should handle the input stream.
                 // also it looks like chunked is automatically processed by HttpListenerRequest
             }
-            context.Response.StatusCode = 201;
-            context.Response.SetOutput("");
+            context.Response.Respond(201);
         }
 
         void httpPutPath(HttpContext context)
@@ -360,14 +357,32 @@ namespace Kraken.CommandLine
             try
             {
                 pathStore.SaveStream(context.Request.InputStream, path);
-                context.Response.StatusCode = 201;
-                context.Response.SetOutput("");
+                context.Response.Respond(201, "");
             } catch (Exception e)
             {
                 Console.WriteLine("PUT: {0} ERROR: {1}", path, e);
-                context.Response.StatusCode = 500;
-                context.Response.SetOutput("");
+                throw new HttpException(500, "PUT FAILED: {0}", e);
             }
+        }
+
+        void httpDelete(HttpContext context)
+        {
+            string path = context.UrlParams ["path"];
+            if (pathStore.IsDirectory(path))
+            {
+
+            } else if (pathStore.IsBlob(path))
+            {
+
+            } else
+            { // doesn't exist - it's a NO OP.
+
+            }
+        }
+
+        void httpMakeCollection(HttpContext context)
+        {
+            string path = context.UrlParams["path"];
         }
 
         void ensureKrakenBase()
