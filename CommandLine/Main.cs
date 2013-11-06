@@ -288,6 +288,7 @@ namespace Kraken.CommandLine
                 server = new HttpServer("http://*:8080/");
                 server.AddRoute("get", "/path...", this.httpGetPath);
                 server.AddRoute("put", "/path...", this.httpPutPath2);
+                server.AddRoute("delete", "/path...", this.httpDeletePath);
             }
             server.Start();
             Console.WriteLine("kraken http is being developed - this is experimental");
@@ -357,7 +358,7 @@ namespace Kraken.CommandLine
             try
             {
                 pathStore.SaveStream(context.Request.InputStream, path);
-                context.Response.Respond(201, "");
+                context.Response.Respond(201);
             } catch (Exception e)
             {
                 Console.WriteLine("PUT: {0} ERROR: {1}", path, e);
@@ -365,18 +366,20 @@ namespace Kraken.CommandLine
             }
         }
 
-        void httpDelete(HttpContext context)
+        void httpDeletePath(HttpContext context)
         {
             string path = context.UrlParams ["path"];
             if (pathStore.IsDirectory(path))
             {
-
+                pathStore.DeleteFolder(path);
+                context.Response.Respond(204);
             } else if (pathStore.IsBlob(path))
             {
-
+                pathStore.DeletePath(path);
+                context.Response.Respond(204);
             } else
             { // doesn't exist - it's a NO OP.
-
+                context.Response.Respond(204);
             }
         }
 

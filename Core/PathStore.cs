@@ -85,6 +85,20 @@ namespace Kraken.Core
             }
         }
 
+        public void DeleteFolder(string vPath)
+        {
+            string normalizedPath = System.IO.Path.IsPathRooted(vPath) ? vPath : NormalizePath(vPath);
+            foreach (string dirPath in Directory.GetDirectories(normalizedPath))
+            {
+                DeleteFolder(dirPath);
+            }
+            foreach (string filePath in Directory.GetFiles(normalizedPath))
+            {
+                Path.DeletePath(filePath);
+            }
+            Directory.Delete(normalizedPath);
+        }
+
         public void DeletePath(string vPath)
         {
             Path.DeletePath(NormalizePath(vPath));
