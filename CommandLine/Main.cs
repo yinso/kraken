@@ -2,11 +2,13 @@ using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Data;
 using System.Data.Common;
 using System.Text;
+using System.Text.RegularExpressions;
 using Mono;
 //using FirebirdSql.Data.FirebirdClient;
 //using Mono.Data.Sqlite;
@@ -286,6 +288,7 @@ namespace Kraken.CommandLine
             {
                 server = new HttpServer("http://*:8080/");
                 server.AddRoute("get", "/path...", this.httpGetPath);
+                server.AddRoute("put", "/path...", this.httpPutPath2);
             }
             server.Start();
             Console.WriteLine("kraken http is being developed - this is experimental");
@@ -304,28 +307,66 @@ namespace Kraken.CommandLine
                     if (context.Request.Headers["If-None-Match"] == blob.Envelope.Checksum) {
                         context.Response.StatusCode = 304;
                         context.Response.Headers["ETag"] = blob.Envelope.Checksum;
-                        context.Response.ContentLength64 = 0;
+                        context.Response.Headers["Server"] = "Kraken/0.1";
                         string mimeType = mimeTypes.PathToMimeType(path);
                         if (!string.IsNullOrEmpty(mimeType)) 
                             context.Response.ContentType = mimeType;
                         Console.WriteLine("ContentType: {0} -> {1} => {2}", path, mimeType, context.Response.ContentType);
+                        context.Response.SetOutput("");
                         blob.Close();
                         Console.WriteLine("got here");
                     } else {
                         context.Response.StatusCode = 200;
-                        context.Response.ContentLength64 = blob.Length;
                         context.Response.Headers["ETag"] = blob.Envelope.Checksum;
+                        context.Response.Headers["Server"] = "Kraken/0.1";
                         string mimeType = mimeTypes.PathToMimeType(path);
                         if (!string.IsNullOrEmpty(mimeType)) 
                             context.Response.ContentType = mimeType;
                         Console.WriteLine("ContentType: {0} -> {1} => {2}", path, mimeType, context.Response.ContentType);
-                        blob.CopyTo(context.Response.OutputStream);
+                        context.Response.SetOutput(blob);
                     }
                 }
             } else
             {
                 context.Response.StatusCode = 404;
-                context.Response.ContentLength64 = 0;
+                context.Response.SetOutput("");
+            }
+        }
+
+        void httpPutPath2(HttpContext context)
+        {
+            string path = context.UrlParams ["path"];
+            // let's convert the path into something that can be viewed.
+            Regex slashRE = new Regex(@"\/");
+            string normalized = path.Replace("/", "_");
+            Directory.CreateDirectory(System.IO.Path.Combine(rootPath, "uploads"));
+            string tempFilePath = FileUtil.TempFilePath(System.IO.Path.Combine(rootPath, "uploads", normalized));
+            using (FileStream fs = File.Open(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                context.Request.InputStream.CopyTo(fs);
+                // it does look like that we should handle the input stream.
+                // also it looks like chunked is automatically processed by HttpListenerRequest
+            }
+            context.Response.StatusCode = 201;
+            context.Response.SetOutput("");
+        }
+
+        void httpPutPath(HttpContext context)
+        {
+            // in this particular case we'll put up one file...
+            // and we'll store the file into the location pinpoint at the place.
+            // if successful return 201 (with ETag set).
+            string path = context.UrlParams ["path"];
+            try
+            {
+                pathStore.SaveStream(context.Request.InputStream, path);
+                context.Response.StatusCode = 201;
+                context.Response.SetOutput("");
+            } catch (Exception e)
+            {
+                Console.WriteLine("PUT: {0} ERROR: {1}", path, e);
+                context.Response.StatusCode = 500;
+                context.Response.SetOutput("");
             }
         }
 

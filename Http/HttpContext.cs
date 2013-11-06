@@ -52,25 +52,36 @@ namespace Kraken.Http
             }
         }
 
-        public HttpListenerResponse Response
+        public HttpResponse Response { get ; private set; }
+
+        public NameValueCollection UrlParams { get; internal set; }
+
+        public Exception Error { get; internal set; }
+
+        public HttpServer Server { get; internal set; }
+
+        public HttpContext(HttpServer server, HttpListenerContext context) : this(server, context, null, null) { }
+
+        public HttpContext(HttpServer server, HttpListenerContext context, Exception err) : this(server, context, null, err) { }
+
+        public HttpContext(HttpServer server, HttpListenerContext context, NameValueCollection col) : this(server, context, col, null) { }
+        
+        public HttpContext(HttpServer server, HttpListenerContext context, NameValueCollection urlParams, Exception error)
         {
-            get
+            Server = server;
+
+            this.context = context;
+
+            Response = new HttpResponse(context.Response);
+
+            if (urlParams == null)
             {
-                return context.Response;
+                UrlParams = new NameValueCollection();
+            } else
+            {
+                UrlParams = urlParams;
             }
-        }
-
-        public NameValueCollection UrlParams { get; private set; }
-
-        public HttpContext(HttpListenerContext context)
-        {
-            this.context = context;
-            UrlParams = new NameValueCollection();
-        }
-
-        public HttpContext(HttpListenerContext context, NameValueCollection urlParams) {
-            this.context = context;
-            UrlParams = urlParams;
+            Error = error;
         }
     }
     

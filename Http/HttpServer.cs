@@ -11,10 +11,12 @@ namespace Kraken.Http
     public class HttpServer
     {
         HttpListener inner;
-        HttpRouteTable routeTable = new HttpRouteTable();
+
+        public HttpRouteTable RouteTable { get; private set; }
         // we ought to be able to hookup all responses
         public HttpServer(params string[] prefixes)
         {
+            RouteTable = new HttpRouteTable();
             initialize(prefixes);
         }
 
@@ -27,47 +29,46 @@ namespace Kraken.Http
             }
             AddRoute("get", "/favicon.ico", HttpServer.defaultNotFound);
             AddRoute("get", "/", HttpServer.defaultContext);
-            //AddRoute("get", "/path...", HttpServer.defaultSplat); // allow for matching the rest of the segments...
         }
 
         static void defaultSplat(HttpContext ctx)
         {
-            byte[] response = Encoding.UTF8.GetBytes(string.Format("<html><body>URL: {0}</body></html>", ctx.Request.RawUrl));
             ctx.Response.StatusCode = 200;
-            ctx.Response.ContentLength64 = response.Length;
-            ctx.Response.OutputStream.Write(response, 0, response.Length);
+            ctx.Response.SetOutput(string.Format("<html><body>URL: {0}</body></html>", ctx.Request.RawUrl));
         }
 
         static void defaultNotFound(HttpContext ctx)
         {
             ctx.Response.StatusCode = 404;
-            ctx.Response.ContentLength64 = 0;
-            //ctx.Response.OutputStream.Close();
+            ctx.Response.SetOutput("");
         }
 
         // Keep-Alive is not implemented at this time.
         static void defaultServerError(HttpContext ctx)
         {
-            ctx.Response.StatusCode = 500;
-            ctx.Response.ContentLength64 = 0;
-            //ctx.Response.OutputStream.Close();
+            if (ctx.Error != null)
+            {
+                if (ctx.Error is HttpException) {
+                    ctx.Response.StatusCode = (ctx.Error as HttpException).StatusCode;
+                } else {
+                    ctx.Response.StatusCode = 500;
+                }
+                ctx.Response.SetOutput(string.Format("<html><body><h3>Error</h3><p>Error: {0}</p></body></html>", ctx.Error));
+            } else
+            {
+                ctx.Response.StatusCode = 500;
+                ctx.Response.SetOutput("");
+            }
         }
 
         static void defaultContext(HttpContext ctx) {
-            byte[] response = Encoding.UTF8.GetBytes("<html><body>OK</body></html>");
             ctx.Response.StatusCode = 200;
-            ctx.Response.ContentLength64 = response.Length;
-            ctx.Response.OutputStream.Write(response, 0, response.Length);
-            //ctx.Response.OutputStream.Close();
+            ctx.Response.SetOutput("<html><body>OK</body></html>");
         }
 
         public void AddRoute(string method, string url, HttpCallback callback)
         {
-            HttpCallback wrappedCallback = (HttpContext ctx) => {
-                callback(ctx);
-                ctx.Response.OutputStream.Close();
-            };
-            routeTable.AddRoute(method, url, wrappedCallback);
+            RouteTable.AddRoute(method, url, callback);
         }
 
         void startListening(object state) {
@@ -84,16 +85,24 @@ namespace Kraken.Http
 
         void startProcessing(object c)
         {
-            var ctx = c as HttpListenerContext;
+            HttpContext context = new HttpContext(this, c as HttpListenerContext);
+            context.Response.Headers["Server"] = "Kraken/0.1";
             try {
-                HttpRouteMatch match = routeTable.Match(ctx);
+                HttpRouteMatch match = RouteTable.Match(context);
                 if (match.IsSuccess) {
-                    match.Callback(new HttpContext(ctx, match.UrlParams));
+                    context.UrlParams = match.UrlParams;
+                    match.Callback(context);
                 } else {
-                    defaultNotFound(new HttpContext(ctx));
+                    defaultNotFound(context);
                 }
             } catch (Exception e) {
-                Console.WriteLine("REQUEST ERROR: {0}", e);
+                if (e is HttpException) {
+                    Console.WriteLine("HTTP Code: {0}", (e as HttpException).StatusCode, e.Message);
+                } else {
+                    Console.WriteLine("REQUEST ERROR: {0}", e);
+                }
+                context.Error = e;
+                defaultServerError(context);
             } finally {
                 
             }

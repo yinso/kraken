@@ -82,7 +82,16 @@ namespace Kraken.Core
             moveFile(tempFile, checksum);
             return checksum;
         }
-        
+
+        public string SaveBlob(Stream s)
+        {
+            string tempPath = FileUtil.TempFilePath(System.IO.Path.Combine(workingPath, ".blob"));
+            using (FileStream fs = File.Open(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
+                s.CopyTo(fs); // might have to worry about networkstream's behavior...
+            }
+            return SaveBlob(tempPath);
+        }
+
         void initialize(string root, ChecksumType type, EncryptionType scheme, string key, int levels, int length)
         {
             rootPath = root;

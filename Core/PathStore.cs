@@ -145,6 +145,13 @@ namespace Kraken.Core
             return Path.SavePath(filePath, saveToPath, workingFolderPath, checksum);
         }
 
+        public Path SaveStream(Stream s, string toPath)
+        {
+            string checksum = blobStore.SaveBlob(s);
+            string saveToPath = NormalizePath(toPath);
+            return Path.SavePath(saveToPath, workingFolder, checksum);
+        }
+
         public void RestoreOnePath(string fromPath, string toPath) {
             Console.WriteLine("Restore File {0} to {1}", fromPath, toPath);
             Path path = ReadPath(fromPath);

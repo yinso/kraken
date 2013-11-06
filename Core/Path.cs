@@ -127,6 +127,28 @@ namespace Kraken.Core
 
         }
 
+        public static Path SavePath(string toPath, string workingDir, string checksum)
+        {
+            Path path; 
+            DateTime timestamp = DateTime.UtcNow;
+            FileUtil.EnsurePathDirectory(toPath); 
+            path = new Path(toPath, false);
+            if (path.Envelope.Checksum == checksum) 
+                return path;
+            path.Envelope.Checksum = checksum;
+            path.Envelope.LastModified = timestamp;
+            setNewVersion(path, checksum, timestamp);
+            string tempPath = FileUtil.TempFilePath(toPath, workingDir);
+            // time to serialize to a temp file, and then *move* the file over the existing file.
+            using (FileStream tempFile = FileUtil.OpenTempFile(tempPath, true)) {
+                path.WriteTo(tempFile);
+            }
+            FileUtil.Rename(tempPath, toPath);
+            File.SetCreationTimeUtc(toPath, timestamp);
+            File.SetLastWriteTimeUtc(toPath, timestamp);
+            return path;
+        }
+
         public static Path SavePath(string fromPath, string toPath, string workingDir, string checksum)
         {
             Path path;

@@ -21,8 +21,7 @@ namespace Kraken.Http
         static void defaultMethod(HttpContext context)
         {
             context.Response.StatusCode = 500;
-            context.Response.ContentLength64 = 0;
-            context.Response.OutputStream.Close();
+            context.Response.SetOutput("");
         }
     }
 
@@ -155,7 +154,7 @@ namespace Kraken.Http
             matcher = new UrlSegmentMatcher(url);
         }
 
-        public HttpRouteMatch Match(HttpListenerContext context) {
+        public HttpRouteMatch Match(HttpContext context) {
             HttpRouteMatch match = new HttpRouteMatch();
             if (method.ToLower() != context.Request.HttpMethod.ToLower()) 
                 return match;
@@ -167,17 +166,26 @@ namespace Kraken.Http
     }
 
     public class HttpRouteTable {
+
         List<HttpRoute> routes = new List<HttpRoute>();
+
+        Dictionary<string, bool> supportedMethods = new Dictionary<string, bool>();
+
         public HttpRouteTable() {
 
         }
 
         public void AddRoute(string method, string url, HttpCallback callback) {
             routes.Add(new HttpRoute(method, url, callback));
+            supportedMethods[method.ToLower()] = true;
         }
 
-        public HttpRouteMatch Match(HttpListenerContext context)
+        public HttpRouteMatch Match(HttpContext context)
         {
+            if (!supportedMethods.ContainsKey(context.Request.HttpMethod.ToLower()))
+            {
+                throw new HttpException(405);
+            }
             foreach (HttpRoute route in routes)
             {
                 HttpRouteMatch match = route.Match(context);
