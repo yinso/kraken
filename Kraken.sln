@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraken.Core", "Core\Kraken.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraken.Unique", "Unique\Kraken.Unique.csproj", "{9D408356-F544-48BF-BA43-3F63D2649452}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebDav", "WebDav\WebDav.csproj", "{C79701D3-1229-4EF2-9248-26BD17D5AE62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -37,6 +39,10 @@ Global
 		{9D408356-F544-48BF-BA43-3F63D2649452}.Debug|x86.Build.0 = Debug|x86
 		{9D408356-F544-48BF-BA43-3F63D2649452}.Release|x86.ActiveCfg = Release|x86
 		{9D408356-F544-48BF-BA43-3F63D2649452}.Release|x86.Build.0 = Release|x86
+		{C79701D3-1229-4EF2-9248-26BD17D5AE62}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C79701D3-1229-4EF2-9248-26BD17D5AE62}.Debug|x86.Build.0 = Debug|Any CPU
+		{C79701D3-1229-4EF2-9248-26BD17D5AE62}.Release|x86.ActiveCfg = Release|Any CPU
+		{C79701D3-1229-4EF2-9248-26BD17D5AE62}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = CommandLine\CommandLine.csproj

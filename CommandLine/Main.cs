@@ -9,7 +9,9 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Text.RegularExpressions;
-using Mono;
+using System.Xml;
+
+//using Mono;
 //using FirebirdSql.Data.FirebirdClient;
 //using Mono.Data.Sqlite;
 //using MongoDB.Driver;
@@ -20,6 +22,7 @@ using Kraken.Util;
 using Kraken.Core;
 using Kraken.Http;
 using Http;
+using WebDav;
 
 namespace Kraken.CommandLine
 {
@@ -289,6 +292,7 @@ namespace Kraken.CommandLine
                 server.AddRoute("get", "/path...", this.httpGetPath);
                 server.AddRoute("put", "/path...", this.httpPutPath2);
                 server.AddRoute("delete", "/path...", this.httpDeletePath);
+                server.AddRoute("propfind", "/path...", this.httpPropfindPath);
             }
             server.Start();
             Console.WriteLine("kraken http is being developed - this is experimental");
@@ -381,6 +385,29 @@ namespace Kraken.CommandLine
             { // doesn't exist - it's a NO OP.
                 context.Response.Respond(204);
             }
+        }
+
+        void httpPropfindPath(HttpContext context)
+        {
+            string path = context.UrlParams ["path"];
+            // we need to be able to parse the XML for manipulation...
+            // if there are no XML - do we consider this a BAD request? 
+            if (context.Request.ContentType != "application/xml")
+            {
+                throw new HttpException(400, "payload_not_xml");
+            } 
+
+            WebDav.Factory factory = new Factory();
+
+            WebDav.Request req = factory.ParseRequest(context.Request);
+            // propname -> return a list of available propnames.
+            // we can now parse the reqest -> we'll need to further determine whether or not we are looking for 
+            // a particular depth.
+
+            string resp = File.ReadAllText("testpropfind.xml", Encoding.UTF8);
+
+            context.Response.ContentType = "application/xml";
+            context.Response.Respond(207, resp);
         }
 
         void httpMakeCollection(HttpContext context)

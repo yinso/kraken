@@ -37,12 +37,15 @@
     <Reference Include="System.Data" />
     <Reference Include="Mono.Data.Sqlite" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="MimeType.cs" />
     <Compile Include="Test.cs" />
+    <Compile Include="DavObject.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -54,6 +57,10 @@
     <None Include="kraken">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="testpropfind.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="propfind_request_1.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Http\Http.csproj">
@@ -67,6 +74,10 @@
     <ProjectReference Include="..\Core\Kraken.Core.csproj">
       <Project>{8191E64D-8C83-4905-8B04-8EBB9F1CD65D}</Project>
       <Name>Kraken.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WebDav\WebDav.csproj">
+      <Project>{C79701D3-1229-4EF2-9248-26BD17D5AE62}</Project>
+      <Name>WebDav</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

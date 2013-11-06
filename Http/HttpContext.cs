@@ -44,13 +44,7 @@ namespace Kraken.Http
 
         HttpListenerContext context;
 
-        public HttpListenerRequest Request
-        {
-            get
-            {
-                return context.Request;
-            }
-        }
+        public HttpRequest Request { get; private set; }
 
         public HttpResponse Response { get ; private set; }
 
@@ -73,6 +67,8 @@ namespace Kraken.Http
             this.context = context;
 
             Response = new HttpResponse(context.Response);
+
+            Request = new HttpRequest(context.Request);
 
             if (urlParams == null)
             {

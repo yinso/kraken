@@ -156,9 +156,9 @@ namespace Kraken.Http
 
         public HttpRouteMatch Match(HttpContext context) {
             HttpRouteMatch match = new HttpRouteMatch();
-            if (method.ToLower() != context.Request.HttpMethod.ToLower()) 
+            if (method.ToLower() != context.Request.Method.ToLower()) 
                 return match;
-            match.IsSuccess = matcher.MatchUrl(UriUtil.URLDecode(context.Request.Url.AbsolutePath), match);
+            match.IsSuccess = matcher.MatchUrl(context.Request.Path, match);
             if (match.IsSuccess)
                 match.Callback = this.callback;
             return match;
@@ -182,7 +182,7 @@ namespace Kraken.Http
 
         public HttpRouteMatch Match(HttpContext context)
         {
-            if (!supportedMethods.ContainsKey(context.Request.HttpMethod.ToLower()))
+            if (!supportedMethods.ContainsKey(context.Request.Method.ToLower()))
             {
                 throw new HttpException(405);
             }

@@ -50,6 +50,8 @@ namespace Kraken.Http
         {
             get { return inner.InputStream; }
         }
+
+        public string Method { get { return inner.HttpMethod; } }
     }
 }
 
