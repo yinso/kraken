@@ -45,6 +45,11 @@ namespace Kraken.Core
             } 
         }
 
+        // except for the dates, everything else is string.
+        // do I want a single function here... or should this be glued from elsewhere?
+        // hmm...
+
+
         void loadPath()
         {
             using (FileStream fs = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read))

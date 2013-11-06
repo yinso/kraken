@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+//using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -14,7 +15,7 @@ namespace Http
         Regex spaceRE = new Regex(@"\s+");
         public MimeTypeRegistry()
         {
-            foreach (string line in File.ReadAllLines("./mime.types")) {
+            foreach (string line in File.ReadAllLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mime.types"))) {
                 string trimmed = line.Trim();
                 if (trimmed.StartsWith("#")) { // a comment
                     continue;
